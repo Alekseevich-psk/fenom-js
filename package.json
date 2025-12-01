@@ -1,0 +1,27 @@
+{
+    "name": "fenom-js",
+    "version": "0.1.0",
+    "description": "",
+    "main": "dist/index.js",
+    "module": "src/index.js",
+    "type": "module",
+    "scripts": {
+        "test": "node test/basic.test.js",
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview"
+    },
+    "keywords": [
+        "template",
+        "fenom",
+        "js",
+        "templating"
+    ],
+    "author": "@Alekseevich-psk",
+    "license": "MIT",
+    "packageManager": "pnpm@10.9.0",
+    "devDependencies": {
+        "typescript": "~5.9.3",
+        "vite": "^7.2.4"
+    }
+}
