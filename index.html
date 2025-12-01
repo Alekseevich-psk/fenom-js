@@ -12,8 +12,29 @@
 <body>
     <main>
         <div class="cont">
+            {set $greeting = 'Привет'}
+            <h1>{$greeting|upper}, {$name}!</h1>
 
+            {if $isAdmin}
+            <p><strong>Вы — администратор!</strong></p>
+            {else}
+            <p>Вы — пользователь.</p>
+            {/if}
 
+            {set $users = [
+            {name: 'Иван'},
+            {name: 'Мария'}
+            ]}
+
+            <ul>
+                {for $user in $users}
+                <li>{$user.name|upper}</li>
+                {foreachelse}
+                <li>Нет пользователей</li>
+                {/for}
+            </ul>
+
+            {$users|length}
         </div>
     </main>
 
