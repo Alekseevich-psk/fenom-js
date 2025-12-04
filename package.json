@@ -9,6 +9,7 @@
         "test": "node test/basic.test.js",
         "dev": "vite",
         "build": "tsc && vite build",
+        "build_core": "tsc",
         "preview": "vite preview"
     },
     "keywords": [

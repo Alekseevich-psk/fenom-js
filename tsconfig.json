@@ -1,10 +1,12 @@
 {
     "compilerOptions": {
-        "allowImportingTsExtensions": true,
+        // "allowImportingTsExtensions": true,
         "moduleResolution": "bundler",
         "module": "ESNext",
         "target": "ESNext",
         "strict": true,
+        "outDir": "./fenom-js",
+        "rootDir": "./src/core",
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,

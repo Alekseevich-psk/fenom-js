@@ -12,9 +12,10 @@
 <body>
     <main>
         <div class="cont">
-            {set $name = 'Анна'} {include 'header.tpl'}
+            <h1>asda sdasdsssss</h1>
+            {* {set $name = 'Анна'} {include 'header.tpl'}
 
-            <h1>Hello, {$name}!</h1>
+            <h1>Hello, {$name}!!</h1>
 
             {if $isAdmin}
             <p>Добро пожаловать, админ!</p>
@@ -22,13 +23,11 @@
             <p>Привет, пользователь!</p>
             {/if}
 
-            
-
             <ul>
                 {foreach $user in $users}
                 <li>{$user.name} ({$user.age})</li>
                 {/foreach}
-            </ul>
+            </ul> *}
         </div>
     </main>
 
