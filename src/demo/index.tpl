@@ -12,8 +12,8 @@
 <body>
     <main>
         <div class="cont">
-            <h1>asda sdasdsssss</h1>
-            {* {set $name = 'Анна'} {include 'header.tpl'}
+            <h1>Test!</h1>
+            {set $name = 'Анна'} {include 'header.tpl'}
 
             <h1>Hello, {$name}!!</h1>
 
@@ -27,7 +27,7 @@
                 {foreach $user in $users}
                 <li>{$user.name} ({$user.age})</li>
                 {/foreach}
-            </ul> *}
+            </ul>
         </div>
     </main>
 

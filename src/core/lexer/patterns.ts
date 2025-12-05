@@ -1,5 +1,5 @@
 // Тип для паттерна
-import type { TokenPattern } from "@/types/token";
+import type { TokenPattern } from "@/core/types/token";
 
 // --- ГРУППА: Переменные и присвоение ---
 export const SET_PATTERNS: TokenPattern[] = [

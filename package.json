@@ -8,9 +8,10 @@
     "scripts": {
         "test": "node test/basic.test.js",
         "dev": "vite",
+        "preview": "vite preview",
         "build": "tsc && vite build",
-        "build_core": "tsc",
-        "preview": "vite preview"
+        "build:core": "vite build -c vite.build.config.js",
+        "demo:dist": "node scripts/start-demo-with-dist.js"
     },
     "keywords": [
         "template",
@@ -22,6 +23,8 @@
     "license": "MIT",
     "packageManager": "pnpm@10.9.0",
     "devDependencies": {
+        "lodash": "^4.17.21",
+        "minimatch": "^10.1.1",
         "typescript": "~5.9.3",
         "vite": "^7.2.4"
     }

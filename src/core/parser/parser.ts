@@ -1,5 +1,5 @@
-import type { Token } from '@/types/token';
-import type { ASTNode } from '@/types/common';
+import type { Token } from '@/core/types/token';
+import type { ASTNode } from '@/core/types/common';
 
 import { parseIf } from './parse-if';
 import { parseFor } from './parse-for';

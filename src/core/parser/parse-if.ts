@@ -1,4 +1,4 @@
-import type { Token } from '@/types/token';
+import type { Token } from '@/core/types/token';
 
 export function parseIf(tokens: Token[], index: number): { node: any; nextIndex: number; } {
     const ifToken = tokens[index];

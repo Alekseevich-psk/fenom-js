@@ -1,4 +1,4 @@
-import type { TokenPattern, Token } from '@/types/token';
+import type { TokenPattern, Token } from '@/core/types/token';
 import * as Patterns from './patterns';
 
 // Объединяем все паттерны

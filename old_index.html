@@ -12,7 +12,7 @@
 <body>
     <main>
         <div class="cont">
-            {set $greeting = 'Привет!'}
+            {set $greeting = 'Привет !!'}
             <h1>{$greeting|upper}, {$name}!!</h1>
 
             {if $isAdmin}
@@ -34,7 +34,7 @@
                 {/for}
             </ul>
 
-            {$users|length}
+            <p>Длина - {$users|length}</p>
         </div>
     </main>
 

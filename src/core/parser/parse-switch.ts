@@ -1,4 +1,4 @@
-import type { Token } from '@/types/token';
+import type { Token } from '@/core/types/token';
 
 export function parseSwitch(tokens: Token[], index: number): { node: any; nextIndex: number; } {
     const switchToken = tokens[index];

@@ -1,4 +1,4 @@
-import type { ASTNode } from '@/types/common';
+import type { ASTNode } from '@/core/types/common';
 import { contextPath, parseValue, transformExpression } from './functions';
 
 export function compile(ast: ASTNode[]) {
