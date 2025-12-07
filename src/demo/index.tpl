@@ -19,7 +19,7 @@
             {set $name = 'Анна!'} {include 'header.tpl'}
 
             <h1>Hello, {$name}</h1>
-
+            {$contacts.phone}
             {if $isAdmin}
                 
             <p>Добро пожаловать, админ!</p>

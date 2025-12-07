@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 export const contextPath = (expr: string): string => {
     // Пока: просто поддержим ?: и !: одинаково
     expr = expr.replace(/(\$[a-zA-Z_]\w*(?:\.\w+)*)\s*[\?:!]\s*:/g, '$1 ? $1 : ');
@@ -38,20 +41,44 @@ export const transformExpression = (expr: string): string => {
     return expr.replace(/\$([a-zA-Z_]\w*(?:\.\w+)*)/g, 'context.$1');
 };
 
-// export const getAllTpls = (dir: string) => {
-//     const results: string[] = [];
+/**
+ * Рекурсивно читает все .json файлы в папке и строит вложенный объект
+ * по структуре папок и имён файлов.
+ *
+ * Пример:
+ *   /data/user.json              → { user: { ... } }
+ *   /data/api/profile.json       → { api: { profile: { ... } } }
+ *   /data/api/stats/count.json   → { api: { stats: { count: { ... } } } }
+ */
+export function collectJsonDataMerged(dir: string): Record<string, any> {
+  const result: Record<string, any> = {};
 
-//     try {
-//         const list = readdirSync(dir);
-//         list.forEach((file) => {
-//             const filePath = join(dir, file);
-//             const stat = fs.statSync(filePath);
-//             if (stat.isDirectory()) {
-//                 results.push(...getAllTpls(filePath));
-//             } else if (extname(file) === '.tpl') {
-//                 results.push(filePath);
-//             }
-//         });
-//     } catch (e) { }
-//     return results;
-// };
+  if (!fs.existsSync(dir)) {
+    console.warn(`[collectJsonDataMerged] Папка не найдена: ${dir}`);
+    return result;
+  }
+
+  function walk(currentPath: string) {
+    const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(currentPath, entry.name);
+
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else if (entry.isFile() && /\.json$/i.test(entry.name)) {
+        try {
+          const content = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+
+          // Объединяем напрямую все ключи
+          Object.assign(result, content);
+        } catch (err) {
+          console.error(`[collectJsonDataMerged] Ошибка парсинга JSON: ${fullPath}`, err);
+        }
+      }
+    }
+  }
+
+  walk(dir);
+  return result;
+}

@@ -1,8 +1,11 @@
-import viteFenomPlugin from './dist/vite-plugin-fenom';
+import viteFenomPlugin from './src/core/vite-plugin-fenom';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
     plugins: [
-        viteFenomPlugin(),
+        viteFenomPlugin({
+            root: './src/demo',
+            dataDir: './src/demo/data'
+        }),
     ],
 });
