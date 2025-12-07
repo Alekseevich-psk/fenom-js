@@ -6,11 +6,12 @@
     "module": "src/index.js",
     "type": "module",
     "scripts": {
-        "test": "node test/basic.test.js",
         "dev": "vite",
         "preview": "vite preview",
         "build": "tsc && vite build",
-        "build:core": "vite build -c vite.build.config.js"
+        "build:core": "vite build -c vite.build.config.js",
+        "test": "vitest",
+        "test:watch": "vitest --watch"
     },
     "keywords": [
         "template",
@@ -24,6 +25,7 @@
     "devDependencies": {
         "@types/node": "^24.10.1",
         "typescript": "~5.9.3",
-        "vite": "^7.2.4"
+        "vite": "^7.2.4",
+        "vitest": "^4.0.15"
     }
 }

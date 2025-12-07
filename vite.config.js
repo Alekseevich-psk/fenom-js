@@ -8,4 +8,10 @@ export default defineConfig({
             dataDir: './src/demo/data'
         }),
     ],
+    test: {
+        globals: true,
+        environment: 'node',
+        clearMocks: true,
+        setupFiles: [],
+    }
 });
