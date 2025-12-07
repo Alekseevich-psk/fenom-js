@@ -18,5 +18,5 @@
             "@/*": ["src/*"]
         }
     },
-    "include": ["src/core"]
+    "include": ["src/core", "dist/vite-plugin-fenom.js"]
 }
