@@ -30,8 +30,8 @@
 
     <div class="block__title">Переменные</div>
     <div class="block__fenom">
-        {set $user = 'test'}
-        <h1>Привет, {$user}</h1>
+        {set $test = 'test'}
+        <h1>Привет, {$test}</h1>
     </div>
 
 </div>
@@ -62,15 +62,60 @@
 
 </div>
 
+<div class="block">
 
-{* <div class="block">
-
-    <div class="block__title"></div>
+    <div class="block__title">Тут коммент fenom</div>
     <div class="block__fenom">
+        {* <div class="block">
+
+            <div class="block__title"></div>
+            <div class="block__fenom">
+
+            </div>
+
+        </div> *}
+    </div>
+
+</div>
+
+<div class="block">
+
+    <div class="block__title">if - else</div>
+    <div class="block__fenom">
+        {if $price >= 1300}
+        {$price}
+        {else}
+        {$price}
+        {/if}
+
+        {if $price <= 1300}
+            {$price}
+            {/if}
+
+            {if $price <=1300 && $price>=1000}
+            {$price}
+            {/if}
+
+            {if $price >=1300 && $price<=1000}
+                {$price}
+                {/if}
+                </div>
 
     </div>
 
-</div> *}
+    <div class="block">
 
-<a href="/about.html">about.html</a>
-{/block}
+        <div class="block__title">Foreach</div>
+        <div class="block__fenom">
+        
+            {foreach $user.friends as $item}
+            <ul>
+                {* <li>{$item.id}</li> *}
+            </ul>
+            {/foreach}
+
+        </div>
+
+
+        <a href="/about.html">about.html</a>
+        {/block}

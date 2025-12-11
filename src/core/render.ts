@@ -12,11 +12,11 @@ export function render(
 ): string {
     const loader = createLoader(root);
     try {
-        // console.log('📊 Переданный контекст:', context);
         const tokens = tokenize(template);
-        console.log('Tokens:', tokens);
+        // console.log('Tokens:', tokens);
         const ast = parse(tokens);
         const compiled = compile(ast, loader);
+        // console.log(context);
         return compiled(context, filters);
     } catch (err) {
         console.error('Template error:', err);

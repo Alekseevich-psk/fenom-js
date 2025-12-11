@@ -297,7 +297,8 @@ export const MISC_PATTERNS: TokenPattern[] = [
     },
     {
         type: 'comment',
-        regex: /^\{\*.*?\*\}/
+        regex: /^\{\*\s*([\s\S]*?)\s*\*\}/,
+        // не нужно process — мы просто пропустим этот блок
     }
 ];
 

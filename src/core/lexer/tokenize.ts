@@ -77,6 +77,13 @@ export function tokenize(input: string): Token[] {
             if (match) {
                 const token: Token = { type: pattern.type };
 
+                if (pattern.type === 'comment') {
+                    // Не добавляем токен, просто пропускаем
+                    pos += match[0].length;
+                    matched = true;
+                    break;
+                }
+
                 if (pattern.process) {
                     Object.assign(token, pattern.process(match));
                 }
