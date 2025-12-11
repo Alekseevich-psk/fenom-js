@@ -26,10 +26,29 @@ export function compile(ast, loader) {
                     const includedTemplate = loader(node.file);
                     const tokens = tokenize(includedTemplate);
                     const ast = parse(tokens);
-                    console.log('ast', ast);
+
+                    // Устанавливаем параметры как локальные переменные в context
+                    if (node.params) {
+                        for (const [key, value] of Object.entries(node.params)) {
+                            if (value.startsWith('$')) {
+                                // $user → context.user
+                                const varName = value.slice(1);
+                                lines.push(`context.${key} = context.${varName};`);
+                            } else if (value === 'true') {
+                                lines.push(`context.${key} = true;`);
+                            } else if (value === 'false') {
+                                lines.push(`context.${key} = false;`);
+                            } else {
+                                // Строка
+                                lines.push(`context.${key} = ${JSON.stringify(value)};`);
+                            }
+                        }
+                    }
+
+                    // Вставляем содержимое шаблона
                     ast.forEach(compileNode);
-                }
-                catch (err) {
+
+                } catch (err) {
                     lines.push(`out += '[Include error: ${node.file}]';`);
                 }
                 break;

@@ -1,3 +1,3 @@
 <div>
-    <p>{$testTile}</p>
+    <p>{$titleTest}</p>
 </div>

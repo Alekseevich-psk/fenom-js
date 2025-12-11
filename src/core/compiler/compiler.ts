@@ -36,8 +36,19 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
                     const includedTemplate = loader(node.file);
                     const tokens = tokenize(includedTemplate);
                     const ast = parse(tokens);
-                    console.log('ast' , ast);
-                    
+
+                    if (node.params) {
+                        for (const [key, value] of Object.entries(node.params)) {
+                            if (value.startsWith('$')) {
+                                const varName = value.slice(1);
+                                console.log(`📌 Устанавливаем: context.${key} = context.${varName};`);
+                                lines.push(`context.${key} = context.${varName};`);
+                            } else {
+                                console.log(`📌 Устанавливаем: context.${key} = ${JSON.stringify(value)};`);
+                                lines.push(`context.${key} = ${JSON.stringify(value)};`);
+                            }
+                        }
+                    }
                     ast.forEach(compileNode);
                 } catch (err) {
                     lines.push(`out += '[Include error: ${node.file}]';`);

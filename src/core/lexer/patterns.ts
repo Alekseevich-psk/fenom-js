@@ -149,14 +149,26 @@ export const CYCLE_PATTERNS: TokenPattern[] = [
 export const INCLUDE_PATTERNS: TokenPattern[] = [
     {
         type: 'include',
-        regex: /^\{include\s+['"]file:([^'"]+)['"]\s*\}/,
-        process: (match) => ({ file: match[1] }),
-    },
-    {
-        type: 'insert',
-        regex: /^\{insert\s+(['"])(.*?)\1\}/,
-        process(match) {
-            return { file: match[2] };
+        // Поддерживает: {include 'file:...' key="value" key='value' key=$var key=word}
+        regex: /^\{include\s+['"]file:([^'"]+)['"](?:\s+((?:\s*\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s}]+))+))?\s*\}/,
+        process: (match) => {
+            const file = match[1];
+            const paramsPart = match[2]; // 'title="Тест" user=$currentUser'
+
+            const params: Record<string, string> = {};
+
+            if (paramsPart) {
+                // Извлекаем все `ключ=значение` через регулярку
+                const paramRegex = /(\w+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s}]+))/g;
+                let paramMatch;
+                while ((paramMatch = paramRegex.exec(paramsPart)) !== null) {
+                    const key = paramMatch[1];
+                    const value = paramMatch[2] || paramMatch[3] || paramMatch[4] || '';
+                    params[key] = value;
+                }
+            }
+
+            return { file, params };
         }
     }
 ];
