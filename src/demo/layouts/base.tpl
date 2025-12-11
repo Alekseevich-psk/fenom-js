@@ -12,8 +12,10 @@
 
 <body>
     <main>
-        {block "main"}
-        {/block}
+        <div class="cont">
+            {block "main"}
+            {/block}
+        </div>
     </main>
 
     <script type="module" src="/src/main.ts"></script>

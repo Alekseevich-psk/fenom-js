@@ -1,3 +1,3 @@
 <div>
-    <p>Header</p>
+    <p>{$testTile}</p>
 </div>
