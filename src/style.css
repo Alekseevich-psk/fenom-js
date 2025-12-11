@@ -50,23 +50,21 @@ h1 {
     text-align: center;
 }
 
-.logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
+.block {
+    margin: 20px 0;
 }
 
-.logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
+.block__title {
+    display: block;
+    position: relative;
+    font-size: 20px;
+    font-weight: 700;
 }
 
-.logo.vanilla:hover {
-    filter: drop-shadow(0 0 2em #3178c6aa);
-}
-
-.card {
-    padding: 2em;
+.block__fenom {
+    border: 1px solid white;
+    padding: 32px;
+    margin-top: 12px;
 }
 
 .read-the-docs {

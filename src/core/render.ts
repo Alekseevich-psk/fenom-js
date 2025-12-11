@@ -12,7 +12,7 @@ export function render(
 ): string {
     const loader = createLoader(root);
     try {
-        console.log('📊 Переданный контекст:', context);  // Добавлено для отладки
+        // console.log('📊 Переданный контекст:', context);
         const tokens = tokenize(template);
         console.log('Tokens:', tokens);
         const ast = parse(tokens);

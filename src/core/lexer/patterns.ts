@@ -28,12 +28,11 @@ export const SET_PATTERNS: TokenPattern[] = [
     // 3. {set $var = true / 123 / $other}
     {
         type: 'set',
-        regex: /^\{set\s+\$(\w+)\s*=\s*([^\s}].*?)\}/,
-        process(match) {
-            const variable = match[1];
-            const value = match[2];
-            return { variable, value };
-        }
+        regex: /^\{set\s+\$(\w+)\s*=\s*([^}]+?)\s*\}/,
+        process: (match) => ({
+            variable: match[1],
+            value: match[2].trim() // может быть: 1, $a + 1, $count * 2
+        })
     },
     {
         type: 'add',
@@ -276,16 +275,19 @@ export const MACRO_PATTERNS: TokenPattern[] = [
     }
 ];
 
+// --- ГРУППА: Игнор ---
+export const IGNORE_PATTERN: TokenPattern[] = [
+    {
+        type: 'ignore_block',
+        regex: /^\{ignore\}([\s\S]*?)\{\/ignore\}/,
+        process: (match) => ({
+            content: match[1]  // содержимое между {ignore} и {/ignore}
+        })
+    }
+];
+
 // --- ГРУППА: Прочее ---
 export const MISC_PATTERNS: TokenPattern[] = [
-    {
-        type: 'ignore',
-        regex: /^\{ignore\}/
-    },
-    {
-        type: 'endignore',
-        regex: /^\{\/ignore\}/
-    },
     {
         type: 'unset',
         regex: /^\{unset\s+\$(\w+)\}/,
@@ -338,5 +340,38 @@ export const OUTPUT_PATTERN: TokenPattern[] = [
             name: match[1],
             filters: []
         })
+    },
+
+    // Поддержка: {$a + $b}, {$count * 2}, {output $user.age + 18}
+    {
+        type: 'output',
+        regex: /^\{output\s+(\$?[^}]+)\}/,
+        process: (match) => ({ name: match[1].trim(), filters: [] })
+    },
+    {
+        type: 'output',
+        regex: /^\{\$(\w+)\}/,
+        process: (match) => ({ name: match[1], filters: [] })
+    },
+    // Любое выражение в {$...}
+    {
+        type: 'output',
+        regex: /^\{\$(.+?)\}/,
+        process: (match) => ({ name: match[1].trim(), filters: [] })
+    }
+];
+
+// Поддержка ++, --, +=, -=, *= и т.д.
+export const OPERATOR_PATTERN: TokenPattern[] = [
+    {
+        type: 'operator',
+        regex: /^\{\$(\w+)\s*(\+\+|--|\+=|-=|\*=|\/=|\%=)\s*([^}]+)?\}/,
+        process: (match) => {
+            const variable = match[1];
+            const operator = match[2];
+            const value = match[3]?.trim() || '1'; // для +=5 → 5, для ++ → 1
+
+            return { variable, operator, value };
+        }
     }
 ];

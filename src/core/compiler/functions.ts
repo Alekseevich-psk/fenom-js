@@ -15,6 +15,7 @@ export const parseValue = (value: string): string => {
     if (value === 'null') return 'null';
     if (value === 'undefined') return 'undefined';
 
+    // Число
     if (!isNaN(Number(value)) && !value.includes(' ')) {
         return value;
     }
@@ -24,25 +25,26 @@ export const parseValue = (value: string): string => {
         (value.startsWith('[') && value.endsWith(']')) ||
         (value.startsWith('{') && value.endsWith('}'))
     ) {
-        return value;
+        // Заменяем все $var → context.var
+        return value.replace(/\$(\w+)/g, 'context.$1');
     }
 
-    // Переменная: $var → context.var
-    if (value.startsWith('$')) {
-        return transformExpression(value); // → context.var
+    // Выражение: $count + 1, $a * $b, 5 - $x и т.д.
+    if (value.includes('$')) {
+        return value.replace(/\$(\w+)/g, 'context.$1');
     }
 
-    // Строка
+    // Строка (все остальные случаи)
     return JSON.stringify(value);
 };
 
 export function transformExpression(exp: string): string {
-  // Если начинается с $ → убираем и добавляем context.
-  if (exp.startsWith('$')) {
-    return `context.${exp.slice(1)}`;
-  }
-  // Если это просто имя переменной — тоже context.var
-  return `context.${exp}`;
+    // Если начинается с $ → убираем и добавляем context.
+    if (exp.startsWith('$')) {
+        return `context.${exp.slice(1)}`;
+    }
+    // Если это просто имя переменной — тоже context.var
+    return `context.${exp}`;
 }
 
 /**
@@ -55,34 +57,34 @@ export function transformExpression(exp: string): string {
  *   /data/api/stats/count.json   → { api: { stats: { count: { ... } } } }
  */
 export function collectJsonDataMerged(dir: string): Record<string, any> {
-  const result: Record<string, any> = {};
+    const result: Record<string, any> = {};
 
-  if (!fs.existsSync(dir)) {
-    console.warn(`[collectJsonDataMerged] Папка не найдена: ${dir}`);
-    return result;
-  }
-
-  function walk(currentPath: string) {
-    const entries = fs.readdirSync(currentPath, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(currentPath, entry.name);
-
-      if (entry.isDirectory()) {
-        walk(fullPath);
-      } else if (entry.isFile() && /\.json$/i.test(entry.name)) {
-        try {
-          const content = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-
-          // Объединяем напрямую все ключи
-          Object.assign(result, content);
-        } catch (err) {
-          console.error(`[collectJsonDataMerged] Ошибка парсинга JSON: ${fullPath}`, err);
-        }
-      }
+    if (!fs.existsSync(dir)) {
+        console.warn(`[collectJsonDataMerged] Папка не найдена: ${dir}`);
+        return result;
     }
-  }
 
-  walk(dir);
-  return result;
+    function walk(currentPath: string) {
+        const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(currentPath, entry.name);
+
+            if (entry.isDirectory()) {
+                walk(fullPath);
+            } else if (entry.isFile() && /\.json$/i.test(entry.name)) {
+                try {
+                    const content = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+
+                    // Объединяем напрямую все ключи
+                    Object.assign(result, content);
+                } catch (err) {
+                    console.error(`[collectJsonDataMerged] Ошибка парсинга JSON: ${fullPath}`, err);
+                }
+            }
+        }
+    }
+
+    walk(dir);
+    return result;
 }

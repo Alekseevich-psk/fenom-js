@@ -31,6 +31,55 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
 
         switch (node.type) {
 
+            case 'operator': {
+                const { variable, operator, value } = node;
+
+                // Преобразуем значение: если начинается с $ → context.var
+                const getValue = (val: string) => {
+                    if (val.startsWith('$')) {
+                        return `context.${val.slice(1)}`;
+                    }
+                    return isNaN(+val) ? `'${val}'` : +val; // число или строка
+                };
+
+                switch (operator) {
+                    case '++':
+                        lines.push(`context.${variable} = (context.${variable} || 0) + 1;`);
+                        lines.push(`out += context.${variable} - 1;`); // пост-инкремент
+                        break;
+                    case '--':
+                        lines.push(`context.${variable} = (context.${variable} || 0) - 1;`);
+                        lines.push(`out += context.${variable} + 1;`); // пост-декремент
+                        break;
+                    case '+=':
+                        lines.push(`context.${variable} = (context.${variable} || 0) + ${getValue(value)};`);
+                        lines.push(`out += context.${variable};`);
+                        break;
+                    case '-=':
+                        lines.push(`context.${variable} = (context.${variable} || 0) - ${getValue(value)};`);
+                        lines.push(`out += context.${variable};`);
+                        break;
+                    case '*=':
+                        lines.push(`context.${variable} = (context.${variable} || 0) * ${getValue(value)};`);
+                        lines.push(`out += context.${variable};`);
+                        break;
+                    case '/=':
+                        lines.push(`context.${variable} = (context.${variable} || 0) / ${getValue(value)};`);
+                        lines.push(`out += context.${variable};`);
+                        break;
+                    case '%=':
+                        lines.push(`context.${variable} = (context.${variable} || 0) % ${getValue(value)};`);
+                        lines.push(`out += context.${variable};`);
+                        break;
+                }
+                break;
+            }
+
+            case 'ignore_block':
+                // Выводим содержимое как обычный текст
+                lines.push(`out += ${JSON.stringify(node.content)};`);
+                break;
+
             case 'include': {
                 try {
                     const includedTemplate = loader(node.file);
