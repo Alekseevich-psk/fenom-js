@@ -78,32 +78,40 @@ export const IF_PATTERNS: TokenPattern[] = [
 
 // --- ГРУППА: Циклы ---
 export const FOREACH_PATTERNS: TokenPattern[] = [
+    // Поддержка: {for $arr as $item} и {foreach $arr as $item}
     {
         type: 'for',
-        regex: /^\{(for|foreach)(?:\s+(\$(\w+),\s*)?\$(\w+)\s+in\s+\$(\w+)(?:\s*\|\s*reverse)?)?\}/,
-        process(match) {
-            const key = match[3] ? match[3] : null;
-            const item = match[4] || match[2];
-            const collection = '$' + (match[5] || match[4]);
-            const isReversed = match[0].includes('| reverse');
-            return { key, item, collection, reverse: isReversed };
-        }
+        regex: /^\{(for|foreach)\s*\$(\w+(?:\.\w+)?)\s+as\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
+        process: (match) => ({
+            collection: match[2],  // 'arr'
+            item: match[3],        // 'value'
+            key: null,
+            reverse: match[0].includes('| reverse')
+        })
     },
+    // {for $arr as $key => $item}, {foreach $arr as $key => $item}
     {
-        type: 'foreachelse',
-        regex: /^\{foreachelse\}/
+        type: 'for',
+        regex: /^\{(for|foreach)\s*\$(\w+(?:\.\w+)?)\s+as\s*\$(\w+)\s*=>\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
+        process: (match) => ({
+            collection: match[2],
+            key: match[3],
+            item: match[4],
+            reverse: match[0].includes('| reverse')
+        })
     },
+    // {/for}, {/foreach}
     {
         type: 'endfor',
         regex: /^\{\/(?:for|foreach)\}/
     },
     {
         type: 'break',
-        regex: /^\{break\}/
+        regex: /^\{break\}/i
     },
     {
         type: 'continue',
-        regex: /^\{continue\}/
+        regex: /^\{continue\}/i
     }
 ];
 

@@ -13,8 +13,9 @@ export function render(
     const loader = createLoader(root);
     try {
         const tokens = tokenize(template);
-        // console.log('Tokens:', tokens);
+        console.log('Tokens:', tokens);
         const ast = parse(tokens);
+        // console.log('ast:', ast);
         const compiled = compile(ast, loader);
         // console.log(context);
         return compiled(context, filters);

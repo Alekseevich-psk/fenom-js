@@ -54,7 +54,13 @@ export function parseFor(tokens: Token[], index: number): { node: any; nextIndex
 
         // Обработка {foreachelse}
         if (token.type === 'foreachelse') {
-            inElseBranch = true;
+            if (depth === 0) {
+                inElseBranch = true;
+                i++;
+                continue;
+            }
+            // Если внутри вложенного цикла — просто пропускаем
+            node.body.push(token); // ❌ или нет?
             i++;
             continue;
         }

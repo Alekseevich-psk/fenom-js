@@ -3,6 +3,7 @@ import * as Patterns from './patterns';
 
 // Объединяем все паттерны
 const ALL_PATTERNS: TokenPattern[] = [
+    ...Patterns.FOREACH_PATTERNS,
     ...Patterns.OPERATOR_PATTERN,
     ...Patterns.IGNORE_PATTERN,
     ...Patterns.EXTENDS_PATTERNS,
@@ -10,7 +11,6 @@ const ALL_PATTERNS: TokenPattern[] = [
     ...Patterns.OUTPUT_PATTERN,
     ...Patterns.SET_PATTERNS,
     ...Patterns.IF_PATTERNS,
-    ...Patterns.FOREACH_PATTERNS,
     ...Patterns.SWITCH_PATTERNS,
     ...Patterns.CYCLE_PATTERNS,
     ...Patterns.FILTER_PATTERNS,
@@ -78,7 +78,7 @@ export function tokenize(input: string): Token[] {
                 const token: Token = { type: pattern.type };
 
                 if (pattern.type === 'comment') {
-                    // Не добавляем токен, просто пропускаем
+                    // Пропускаем: не добавляем в tokens
                     pos += match[0].length;
                     matched = true;
                     break;

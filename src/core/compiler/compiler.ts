@@ -29,6 +29,10 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
             return; // обрабатываются отдельно
         }
 
+        if (['endfor'].includes(node.type)) {
+            return; // игнорирую
+        }
+
         switch (node.type) {
 
             case 'operator': {
@@ -90,10 +94,10 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
                         for (const [key, value] of Object.entries(node.params)) {
                             if (value.startsWith('$')) {
                                 const varName = value.slice(1);
-                                console.log(`📌 Устанавливаем: context.${key} = context.${varName};`);
+                                // console.log(`📌 Устанавливаем: context.${key} = context.${varName};`);
                                 lines.push(`context.${key} = context.${varName};`);
                             } else {
-                                console.log(`📌 Устанавливаем: context.${key} = ${JSON.stringify(value)};`);
+                                // console.log(`📌 Устанавливаем: context.${key} = ${JSON.stringify(value)};`);
                                 lines.push(`context.${key} = ${JSON.stringify(value)};`);
                             }
                         }
@@ -113,25 +117,25 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
                 const value = transformExpression(node.name);
                 let result = `(${value})`;
 
+                // Фильтры
                 node.filters.forEach((filter: string) => {
-                    // Если есть аргументы: upper, escape, length, replace:'a':'b'
                     const [name, ...args] = filter.split(':').map(s => s.trim());
+                    const argList = args.map(arg => {
+                        if (/^['"].*['"]$/.test(arg)) return arg;
+                        return transformExpression('$' + arg);
+                    }).join(', ');
 
-                    if (args.length === 0) {
-                        result = `filters.${name}(${result})`;
-                    } else {
-                        const argList = args.map(arg => {
-                            // Если аргумент в кавычках — оставляем как есть, иначе → возможно, переменная
-                            if (arg.startsWith("'") && arg.endsWith("'")) return arg;
-                            if (arg.startsWith('"') && arg.endsWith('"')) return arg;
-                            return transformExpression('$' + arg); // переменная
-                        }).join(', ');
-
+                    if (argList) {
                         result = `filters.${name}(${result}, ${argList})`;
+                    } else {
+                        result = `filters.${name}(${result})`;
                     }
                 });
 
-                lines.push(`out += ${result} ?? '';`);
+                // Защита от [object Object]
+                result = `(typeof ${value} === 'object' || ${value} === null ? '' : ${result})`;
+
+                lines.push(`out += ${result};`);
                 break;
 
             case 'set':
@@ -166,35 +170,37 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
                 break;
 
             case 'for': {
-                const key = node.key ? `context.${node.key} = ` : '';
-                const item = `context.${node.item}`;
-                const collection = contextPath(node.collection);
+                const collection = transformExpression(node.collection); // → context.arr
+                const itemVar = `context.${node.item}`;                // → context.value
+                const keyVar = node.key ? `context.${node.key}` : null;
                 const indexVar = `i_${node.item}`;
 
-                // Защита от undefined, null, не-массива
+                // Проверка: массив существует и не пуст
                 lines.push(`if (${collection} && Array.isArray(${collection}) && ${collection}.length > 0) {`);
 
+                // Цикл
                 if (node.reverse) {
                     lines.push(`for (let ${indexVar} = ${collection}.length - 1; ${indexVar} >= 0; ${indexVar}--) {`);
                 } else {
                     lines.push(`for (let ${indexVar} = 0; ${indexVar} < ${collection}.length; ${indexVar}++) {`);
                 }
 
-                // Присваиваем индекс (для key)
-                if (key) {
-                    lines.push(`${key} ${indexVar};`);
+                // Присваиваем индекс (если есть key)
+                if (keyVar) {
+                    lines.push(`${keyVar} = ${indexVar};`);
                 }
-                // Присваиваем элемент (item)
-                lines.push(`${item} = ${collection}[${indexVar}];`);
 
-                // Тело цикла
+                // Присваиваем элемент: context.value = context.arr[i]
+                lines.push(`${itemVar} = ${collection}[${indexVar}];`);
+
+                // Компилируем тело
                 node.body.forEach(compileNode);
 
-                // Закрываем for и if
+                // Закрываем цикл
                 lines.push(`}`);
-                lines.push(`}`); // конец if (массив существует и не пуст)
+                lines.push(`}`);
 
-                // {foreachelse} — выполняется, если массив пуст или не существует
+                // {foreachelse}
                 if (node.elseBody && node.elseBody.length > 0) {
                     lines.push(`else {`);
                     node.elseBody.forEach(compileNode);

@@ -107,12 +107,25 @@
 
         <div class="block__title">Foreach</div>
         <div class="block__fenom">
-        
+
+            {set $arr = ['test 1', 'test 2', 'test 3']}
+
+
+            {foreach $arr as $value}
+            {$value}
+            {/for}
+            <br>
+
+            {$user.friends|length}
+
+            <br>
+
             {foreach $user.friends as $item}
             <ul>
-                {* <li>{$item.id}</li> *}
+                <li>{$item.name}</li>
             </ul>
             {/foreach}
+
 
         </div>
 

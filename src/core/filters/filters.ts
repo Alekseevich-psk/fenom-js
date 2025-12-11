@@ -12,5 +12,5 @@ export const filters = {
         ? arr.length
         : typeof arr === 'object' && arr !== null
             ? Object.keys(arr).length
-            : String(arr).length
+            : String(arr).length,
 };
