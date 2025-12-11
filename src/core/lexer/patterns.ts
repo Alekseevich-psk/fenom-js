@@ -149,10 +149,8 @@ export const CYCLE_PATTERNS: TokenPattern[] = [
 export const INCLUDE_PATTERNS: TokenPattern[] = [
     {
         type: 'include',
-        regex: /^\{include\s+(['"])(.*?)\1\}/,
-        process(match) {
-            return { file: match[2] };
-        }
+        regex: /^\{include\s+['"]file:([^'"]+)['"]\s*\}/,
+        process: (match) => ({ file: match[1] }),
     },
     {
         type: 'insert',
@@ -165,28 +163,35 @@ export const INCLUDE_PATTERNS: TokenPattern[] = [
 
 // --- ГРУППА: Наследование ---
 export const EXTENDS_PATTERNS: TokenPattern[] = [
+    // {extends 'file:...'}
     {
         type: 'extends',
-        regex: /^\{extends\s+(['"])(.*?)\1\}/,
-        process(match) {
-            return { file: match[2] };
-        }
+        regex: /^\{extends\s+['"]file:([^'"]+)['"]\s*\}/,
+        process: (match) => ({ file: match[1] }),
     },
+
+    // {block "name"} → открывается
     {
-        type: 'block',
-        regex: /^\{block\s+(['"])(.*?)\1\}/,
+        type: 'block_open',
+        regex: /^\{block\s+(['"])(.*?)\1\s*\}/,
         process(match) {
             return { name: match[2] };
         }
     },
+
+    // {/block} → закрывается
     {
-        type: 'endblock',
-        regex: /^\{\/block\}/
+        type: 'block_close',
+        regex: /^\{\/block\}/,
     },
+
+    // {parent} — вставляет родительский контент блока
     {
         type: 'parent',
         regex: /^\{parent\}/
     },
+
+    // {paste "blockName"} — вставка другого блока (Fenom-фича)
     {
         type: 'paste',
         regex: /^\{paste\s+(['"])(.*?)\1\}/,
@@ -194,6 +199,8 @@ export const EXTENDS_PATTERNS: TokenPattern[] = [
             return { name: match[2] };
         }
     },
+
+    // {use 'file:...'} — импорт макросов
     {
         type: 'use',
         regex: /^\{use\s+(['"])(.*?)\1\}/,
@@ -284,13 +291,40 @@ export const MISC_PATTERNS: TokenPattern[] = [
 export const OUTPUT_PATTERN: TokenPattern[] = [
     {
         type: 'output',
-        regex: /^\{\$(\w+(?:\.\w+)*)\s*(?:\|\s*([^}]+?))?\}/,
-        process(match) {
-            const name = '$' + match[1];
-            const filters = match[2]
-                ? match[2].split('|').map(f => f.trim())
-                : [];
-            return { name, filters };
-        }
+        regex: /^\{\$([^\s}]+)\}/,
+        process: (match) => ({
+            name: match[1],
+            filters: []
+        })
+    },
+
+    // Поддержка: {output name="title"} → name: "title"
+    {
+        type: 'output',
+        regex: /^\{output\s+name\s*=\s*(['"])(.*?)\1\s*\}/,
+        process: (match) => ({
+            name: match[2], // ← здесь будет "name", а не name="name"
+            filters: []
+        })
+    },
+
+    // Поддержка: {output "$title"} → name: "$title"
+    {
+        type: 'output',
+        regex: /^\{output\s+(['"])(.*?)\1\s*\}/,
+        process: (match) => ({
+            name: match[2],
+            filters: []
+        })
+    },
+
+    // Поддержка: {output $title} → name: "$title"
+    {
+        type: 'output',
+        regex: /^\{output\s+([^\s}]+)\s*\}/,
+        process: (match) => ({
+            name: match[1],
+            filters: []
+        })
     }
 ];

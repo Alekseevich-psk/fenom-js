@@ -36,10 +36,14 @@ export const parseValue = (value: string): string => {
     return JSON.stringify(value);
 };
 
-export const transformExpression = (expr: string): string => {
-    expr = expr.replace(/(\$[a-zA-Z_]\w*(?:\.\w+)*)\s*[\?:!]\s*:/g, '$1 ? $1 : ');
-    return expr.replace(/\$([a-zA-Z_]\w*(?:\.\w+)*)/g, 'context.$1');
-};
+export function transformExpression(exp: string): string {
+  // Если начинается с $ → убираем и добавляем context.
+  if (exp.startsWith('$')) {
+    return `context.${exp.slice(1)}`;
+  }
+  // Если это просто имя переменной — тоже context.var
+  return `context.${exp}`;
+}
 
 /**
  * Рекурсивно читает все .json файлы в папке и строит вложенный объект

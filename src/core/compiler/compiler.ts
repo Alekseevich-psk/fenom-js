@@ -1,11 +1,50 @@
-import type { ASTNode } from '@/core/types/common';
+import type { ASTNode, TemplateLoader } from '@/core/types/common';
 import { contextPath, parseValue, transformExpression } from './functions';
+import { tokenize } from '../lexer/tokenize';
+import { parse } from '../parser/parser';
 
-export function compile(ast: ASTNode[]) {
+export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, filters: any) => string {
+    const blocks: Record<string, ASTNode[]> = {};
+    let parentFile: string | null = null;
     const lines: string[] = [];
 
+    // Извлекаем extends и блоки
+    for (const node of ast) {
+        if (node.type === 'extends') {
+            parentFile = node.file; // например, "layouts/base.tpl"
+            continue;
+        }
+
+        if (node.type === 'block') {
+            blocks[node.name] = node.body;
+        }
+    }
+
+    const filteredAst = ast.filter(
+        node => node.type !== 'extends' && node.type !== 'block_open' && node.type !== 'block_close'
+    );
+
     function compileNode(node: ASTNode) {
+        if (['extends', 'block_open', 'block_close'].includes(node.type)) {
+            return; // обрабатываются отдельно
+        }
+
         switch (node.type) {
+
+            case 'include': {
+                try {
+                    const includedTemplate = loader(node.file);
+                    const tokens = tokenize(includedTemplate);
+                    const ast = parse(tokens);
+                    console.log('ast' , ast);
+                    
+                    ast.forEach(compileNode);
+                } catch (err) {
+                    lines.push(`out += '[Include error: ${node.file}]';`);
+                }
+                break;
+            }
+
             case 'text':
                 lines.push(`out += ${JSON.stringify(node.value)};`);
                 break;
@@ -120,21 +159,41 @@ export function compile(ast: ASTNode[]) {
                 lines.push(`}`);
                 break;
 
+            case 'block': {
+                const blockContent = blocks[node.name] || node.body;
+
+                if (Array.isArray(blockContent)) {
+                    blockContent.forEach(compileNode);
+                } else {
+                    console.warn(`Block "${node.name}" has no body and no override`);
+                }
+
+                break;
+            }
+
             default:
                 console.warn(`Unknown node type: ${node.type}`);
         }
     }
 
-    ast.forEach(compileNode);
+    if (parentFile && ast.some((node, i) => node.type === 'extends' && i !== 0)) {
+        console.warn('{extends} должен быть первым тегом в шаблоне');
+    }
+
+    if (parentFile) {
+        const parentTemplate = loader(parentFile);
+        const tokens = tokenize(parentTemplate);
+        const parentAst = parse(tokens);
+        parentAst.forEach(compileNode); // ← родительский шаблон
+    } else {
+        filteredAst.forEach(compileNode); // ← текущий шаблон
+    }
 
     const fnBody = `
-            let out = '';
-            ${lines.join('\n')}
-            return out;
-            `;
+        let out = '';
+        ${lines.join('\n')}
+        return out;
+    `;
 
-    return new Function('context', 'filters', fnBody) as (
-        context: Record<string, any>,
-        filters: Record<string, Function>
-    ) => string;
+    return new Function('context', 'filters', fnBody) as (context: any, filters: any) => string;
 }

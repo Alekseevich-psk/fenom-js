@@ -2,40 +2,34 @@ import type { ViteDevServer } from 'vite';
 import type { UserConfig } from './types/common';
 
 import fs from 'node:fs';
+import { join } from 'path';
 import { collectJsonDataMerged } from './compiler/functions';
+import { render } from './render';
 
 export default function fenomPlugin(userOptions: UserConfig) {
-    const defaults = {
-        root: './src',
-        dataDir: './src'
-    };
-
+    const defaults = { root: './src', dataDir: './src' };
     const options = { ...defaults, ...userOptions };
-
+    
     return {
         name: 'vite-plugin-fenom',
 
-        configResolved() {},
-
         configureServer(server: ViteDevServer) {
-            const { root } = options;
+            const root = join(process.cwd(), options.root);
+            const dataDir = join(process.cwd(), options.dataDir);
 
             server.middlewares.use(async (req, res, next) => {
                 const url = req.url;
 
-                // Обрабатываем / и .html
+                // Поддержка / → index.tpl, /about → about.tpl
                 if (url === '/' || url?.endsWith('.html')) {
-                    const tplPath =
-                        url === '/'
-                            ? `${root}/index.tpl`
-                            : `${root}/${url.replace('.html', '.tpl')}`;
+                    const fileName = url === '/' ? 'index' : url.replace('.html', '');
+                    const tplPath = join(root, `${fileName}.tpl`);
 
                     if (fs.existsSync(tplPath)) {
                         const content = fs.readFileSync(tplPath, 'utf-8');
-                        const { render } = await import('./index');
-                        const html = render(content, collectJsonDataMerged(options.dataDir));
+                        const data = collectJsonDataMerged(dataDir);
+                        const html = render(content, data, root);
 
-                        // 🔥 Вставляем HMR-клиент вручную
                         const htmlWithHmr = html.replace(
                             /<\/head>/i,
                             `<script type="module" src="/@vite/client"></script></head>`
@@ -46,19 +40,21 @@ export default function fenomPlugin(userOptions: UserConfig) {
                         return;
                     }
                 }
-
                 next();
             });
 
-            // 🔁 HMR
+            // HMR при изменении .tpl
             server.watcher.on('change', (file) => {
                 if (file.endsWith('.tpl')) {
-                    console.log('🔁 .tpl изменён — перезагрузка:', file);
+                    console.log('🔁 Шаблон изменён — перезагрузка:', file);
                     server.ws.send({ type: 'full-reload' });
                 }
-
-                console.log('🔁Изменён — перезагрузка:', file);
             });
+        },
+
+        // Опционально: поддержка сборки (buildStart + transform)
+        buildStart() {
+            console.log('[Fenom] Сборка шаблонов...');
         },
     };
 }

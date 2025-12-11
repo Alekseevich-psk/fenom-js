@@ -1,24 +1,24 @@
-import { render } from './core/index';
+// import { render } from './core/render';
 
-const template = document.querySelector('body') as HTMLElement | null;
+// const template = document.querySelector('body') as HTMLElement | null;
 
-// === Запуск на странице ===
-(function () {
-    const container = document.querySelector('body') as HTMLElement | null;
-    if (!container) return;
+// // === Запуск на странице ===
+// (function () {
+//     const container = document.querySelector('body') as HTMLElement | null;
+//     if (!container) return;
 
-    // Сохраним только внутренний HTML, но не запускай скрипты
-    const templateHTML = container.innerHTML;
+//     // Сохраним только внутренний HTML, но не запускай скрипты
+//     const templateHTML = container.innerHTML;
 
-    // Твои данные
-    const context = {
-        name: 'Анна',
-        isAdmin: true
-    };
+//     // Твои данные
+//     const context = {
+//         name: 'Анна',
+//         isAdmin: true
+//     };
 
-    // Рендерим
-    const html = render(templateHTML, context);
+//     // Рендерим
+//     const html = render(templateHTML, context);
 
-    // Вставляем обратно
-    container.innerHTML = html;
-})();
+//     // Вставляем обратно
+//     container.innerHTML = html;
+// })();
