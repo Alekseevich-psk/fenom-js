@@ -88,3 +88,29 @@ export function collectJsonDataMerged(dir: string): Record<string, any> {
     walk(dir);
     return result;
 }
+
+export function warnFilter<T extends (...args: any[]) => any>(
+    name: string,
+    expected: 'array' | 'string' | 'object' | 'number',
+    fn: T
+): T {
+    return ((input: any, ...args: any[]) => {
+        const type = typeof input;
+        const isArray = Array.isArray(input);
+        const isString = type === 'string';
+        const isObject = input && typeof input === 'object' && !isArray;
+
+        let matches = false;
+        if (expected === 'array') matches = isArray;
+        if (expected === 'string') matches = isString;
+        if (expected === 'object') matches = isObject;
+        if (expected === 'number') matches = !isNaN(Number(input));
+
+        if (!matches && input !== undefined && input !== null) {
+            const typeName = isArray ? 'array' : isString ? 'string' : isObject ? 'object' : type;
+            console.warn(`[Fenom] filter '${name}' expects ${expected}, got ${typeName}`);
+        }
+
+        return fn(input, ...args);
+    }) as T;
+}

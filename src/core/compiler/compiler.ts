@@ -92,16 +92,21 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
 
                     if (node.params) {
                         for (const [key, value] of Object.entries(node.params)) {
-                            if (value.startsWith('$')) {
-                                const varName = value.slice(1);
-                                // console.log(`📌 Устанавливаем: context.${key} = context.${varName};`);
-                                lines.push(`context.${key} = context.${varName};`);
+                            // Проверяем, что value — строка
+                            if (typeof value === 'string') {
+                                if (value.startsWith('$')) {
+                                    const varName = value.slice(1);
+                                    lines.push(`context.${key} = context.${varName};`);
+                                } else {
+                                    lines.push(`context.${key} = ${JSON.stringify(value)};`);
+                                }
                             } else {
-                                // console.log(`📌 Устанавливаем: context.${key} = ${JSON.stringify(value)};`);
+                                // Если не строка — преобразуем в JSON (например, число, boolean)
                                 lines.push(`context.${key} = ${JSON.stringify(value)};`);
                             }
                         }
                     }
+
                     ast.forEach(compileNode);
                 } catch (err) {
                     lines.push(`out += '[Include error: ${node.file}]';`);
@@ -115,29 +120,27 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
 
             case 'output': {
                 const value = transformExpression(node.name);
-                let result = value; // нет скобок
+                let result = value;
 
                 // Применяем фильтры
                 for (const filter of node.filters) {
                     const parts = filter.split(':').map(s => s.trim());
                     const name = parts[0];
-                    const args = parts.slice(1).map(arg => {
-                        if (/^['"].*['"]$/.test(arg)) return arg;
-                        return transformExpression('$' + arg);
+                    const args = parts.slice(1).map((arg: string) => { // ← добавлен :string
+                        if (/^['"].*['"]$/.test(arg)) {
+                            return arg; // строка в кавычках — оставляем как есть
+                        }
+                        return transformExpression('$' + arg); // переменная — обрабатываем
                     });
 
                     const argList = args.length > 0 ? ', ' + args.join(', ') : '';
                     result = `filters["${name}"](${result}${argList})`;
                 }
 
-                // ✅ Проверяем ТОЛЬКО если НЕ было фильтров
-                // Если фильтры были — доверяем им (например, length вернёт число)
                 if (node.filters.length === 0) {
-                    // Без фильтров: защищаем от [object Object]
                     const safeValue = `(typeof ${value} === 'object' || ${value} === null ? '' : ${value})`;
                     lines.push(`out += ${safeValue};`);
                 } else {
-                    // ✅ С фильтрами: доверяем результату
                     lines.push(`out += ${result};`);
                 }
 

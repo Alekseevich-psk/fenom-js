@@ -91,9 +91,8 @@ export function parse(tokens: Token[]): ASTNode[] {
         }
 
         if (token.type === 'output') {
-            console.log('🎯 Raw output token:', token.value); // ← смотрим, что пришло
-
             const match = token.value.match(/^\{\$(.+)\}$/);
+
             if (!match) {
                 ast.push({ type: 'text', value: token.value });
                 i++;
@@ -101,14 +100,9 @@ export function parse(tokens: Token[]): ASTNode[] {
             }
 
             const content = match[1].trim();
-            console.log('🎯 Parsed content:', content); // → "user.friends|length"
-
             const parts = content.split('|');
             const variable = parts[0];
             const filters = parts.slice(1);
-
-            console.log('🎯 Variable:', variable); // → user.friends
-            console.log('🎯 Filters:', filters);   // → ['length']
 
             ast.push({
                 type: 'output',

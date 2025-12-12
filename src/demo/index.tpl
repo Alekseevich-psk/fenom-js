@@ -110,22 +110,21 @@
 
             {set $arr = ['test 1', 'test 2', 'test 3']}
 
-
+            {if $arr|length > 2}
             {foreach $arr as $value}
             {$value}
             {/for}
-            <br>
+            {/if}
 
             длина
-            {$name|length}
+            {$arr|length}
 
             <br>
-
-            {foreach $user.friends as $item}
             <ul>
+                {foreach $user.friends as $item}
                 <li>{$item.name}</li>
+                {/foreach}
             </ul>
-            {/foreach}
 
 
         </div>
