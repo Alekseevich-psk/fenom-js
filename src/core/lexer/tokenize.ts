@@ -5,6 +5,7 @@ import * as Patterns from './patterns';
 const ALL_PATTERNS: TokenPattern[] = [
     ...Patterns.MISC_PATTERNS,
     ...Patterns.FOREACH_PATTERNS,
+    ...Patterns.SWITCH_PATTERNS,
     ...Patterns.OPERATOR_PATTERN,
     ...Patterns.IF_PATTERNS,
     ...Patterns.IGNORE_PATTERN,
@@ -12,7 +13,6 @@ const ALL_PATTERNS: TokenPattern[] = [
     ...Patterns.SET_PATTERNS,
     ...Patterns.INCLUDE_PATTERNS,
     ...Patterns.OUTPUT_PATTERN,
-    ...Patterns.SWITCH_PATTERNS,
     ...Patterns.CYCLE_PATTERNS,
     ...Patterns.FILTER_PATTERNS,
     ...Patterns.MACRO_PATTERNS,
