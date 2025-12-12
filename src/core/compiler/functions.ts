@@ -196,3 +196,11 @@ export function transformCondition(condition: string): string {
             return `filters["${filter}"](${expr}${argList ? ', ' + argList : ''})`;
         });
 }
+
+export function minifyHTML(html: string): string {
+    return html
+        .replace(/>\s+</g, '><')           // > < → ><
+        .replace(/\s{2,}/g, ' ')           // множественные пробелы
+        .replace(/(<!--.*?-->)\s+/g, '$1') // пробелы после комментариев
+        .trim();
+}

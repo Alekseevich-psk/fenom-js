@@ -1,24 +1,32 @@
+import type { TemplateLoader } from './../core/types/common';
+
 import { parse } from './parser/parser';
 import { compile } from './compiler/compiler';
 import { tokenize } from "./lexer/tokenize";
 import { filters } from "./filters/filters";
-import { createLoader } from './loader/loader';
-
+import { minifyHTML } from './compiler/functions';
 
 export function render(
     template: string,
     context: Record<string, any>,
-    root: string
+    options: {
+        root: string;
+        loader?: TemplateLoader;
+        minify: boolean;
+    }
 ): string {
-    const loader = createLoader(root);
+    const { root, loader, minify } = options || {};
+    const defaultLoader = loader || (() => root);
+    
     try {
         const tokens = tokenize(template);
-        // console.log('Tokens:', tokens);
         const ast = parse(tokens);
-        // console.log('ast:', ast);
-        const compiled = compile(ast, loader);
-        // console.log(filters);
-        return compiled(context, filters);
+        const compiled = compile(ast, defaultLoader);
+        const html = compiled(context, filters);
+        
+        return minify
+            ? minifyHTML(html)
+            : html;
     } catch (err) {
         console.error('Template error:', err);
         return `<span style="color:red">[Ошибка шаблона: ${(err as Error).message}]</span>`;

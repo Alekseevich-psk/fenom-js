@@ -8,10 +8,8 @@
     "scripts": {
         "dev": "vite",
         "preview": "vite preview",
-        "build": "tsc && vite build",
-        "build:core": "vite build -c vite.build.config.js",
-        "test": "vitest",
-        "test:watch": "vitest --watch"
+        "build": "vite build",
+        "fenom": "vite build -c vite.fenom.js"
     },
     "keywords": [
         "template",

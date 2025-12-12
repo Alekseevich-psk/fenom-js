@@ -9,7 +9,7 @@ export default defineConfig({
             formats: ['es', 'cjs'],
             fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
         },
-        outDir: 'dist',
+        outDir: 'FenomJS',
         emptyOutDir: true,
     },
     resolve: {

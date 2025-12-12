@@ -1,7 +1,9 @@
+import type { TemplateLoader } from './../types/common';
+
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
-export function createLoader(root: string) {
+export function createSyncLoader(root: string): TemplateLoader {
     return function loader(file: string) {
         const fullPath = join(root, file);
 
@@ -12,6 +14,7 @@ export function createLoader(root: string) {
         if (!readFileSync(fullPath, 'utf-8')) {
             throw new Error(`Template not found: ${fullPath}`);
         }
+        
         return readFileSync(fullPath, 'utf-8');
     };
 }
