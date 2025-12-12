@@ -6,7 +6,7 @@ export const SET_PATTERNS: TokenPattern[] = [
     // 1. {set $var = {...} или [...]}
     {
         type: 'set',
-        regex: /^\{set\s+\$(\w+)\s*=\s*(\{[\s\S]*\}|\[[\s\S]*\])\}/,
+        regex: /^\{set\s+\$(\w+)\s*=\s*(\{[^}]*\}|\[[^}]*\])\}/,
         process(match) {
             const variable = match[1];
             const value = match[2]; // [1,2,3] или {a:1}
@@ -28,12 +28,14 @@ export const SET_PATTERNS: TokenPattern[] = [
     // 3. {set $var = true / 123 / $other}
     {
         type: 'set',
-        regex: /^\{set\s+\$(\w+)\s*=\s*([^}]+?)\s*\}/,
+        regex: /^\{set\s+\$(\w+)\s*=\s*([^}\s][^}]*)\}/,
         process: (match) => ({
             variable: match[1],
             value: match[2].trim() // может быть: 1, $a + 1, $count * 2
         })
     },
+
+    // add, var — остаются
     {
         type: 'add',
         regex: /^\{add\s+\$(\w+)\s*\+\+\}/,
@@ -362,6 +364,19 @@ export const OUTPUT_PATTERN: TokenPattern[] = [
             return {
                 name: `$${variable}`, // → '$arr'
                 filters             // → ['length']
+            };
+        }
+    },
+
+    // Любое выражение в { ... }, даже без $
+    {
+        type: 'output',
+        regex: /^\{([^$].+?)\}/,
+        process: (match) => {
+            const content = match[1].trim();
+            return {
+                name: content,     // → '"Привет" ~ " " ~ "мир"'
+                filters: []
             };
         }
     }

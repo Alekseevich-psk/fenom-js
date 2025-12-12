@@ -128,10 +128,13 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
                     const parts = filter.split(':').map(s => s.trim());
                     const name = parts[0];
                     const args = parts.slice(1).map((arg: string) => { // ← добавлен :string
+
                         if (/^['"].*['"]$/.test(arg)) {
                             return arg; // строка в кавычках — оставляем как есть
                         }
-                        return transformExpression('$' + arg); // переменная — обрабатываем
+
+                        const normalizedArg = arg.startsWith('$') ? arg : '$' + arg;
+                        return transformExpression(normalizedArg);
                     });
 
                     const argList = args.length > 0 ? ', ' + args.join(', ') : '';

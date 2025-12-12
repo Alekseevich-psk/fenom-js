@@ -38,13 +38,76 @@ export const parseValue = (value: string): string => {
     return JSON.stringify(value);
 };
 
-export function transformExpression(exp: string): string {
-    // Если начинается с $ → убираем и добавляем context.
-    if (exp.startsWith('$')) {
-        return `context.${exp.slice(1)}`;
+export function transformExpression(expr: string): string {
+    const trimmed = expr.trim();
+
+    // 🔥 СНАЧАЛА проверяем ~
+    if (trimmed.includes('~')) {
+        return transformConcatenation(trimmed);
     }
-    // Если это просто имя переменной — тоже context.var
-    return `context.${exp}`;
+
+    // Потом строки
+    if (/^['"].*['"]$/.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Числа
+    if (/^\d+$/.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Логика
+    if (trimmed === 'true' || trimmed === 'false' || trimmed === 'null') {
+        return trimmed;
+    }
+
+    // Переменные
+    if (trimmed.startsWith('$')) {
+        const path = trimmed.slice(1).split('.');
+        return path.length > 1
+            ? `(${path.map((_, i) => 'context.' + path.slice(0, i + 1).join('.')).join(' != null ? ') + ' != null ? context.' + path.join('.') + ':null'.repeat(path.length)})`
+            : `context.${path[0]}`;
+    }
+
+    // Остальное — как есть (выражение)
+    return `(${trimmed})`;
+}
+
+function transformConcatenation(expr: string): string {
+    const parts: string[] = [];
+    let current = '';
+    let inString = false;
+    let depth = 0; // для скобок
+
+    for (let char of expr) {
+        if ((char === '"' || char === "'") && depth === 0) {
+            inString = !inString;
+        }
+        if (char === '(' && !inString) depth++;
+        if (char === ')' && !inString) depth--;
+
+        if (char === '~' && !inString && depth === 0) {
+            if (current.trim()) {
+                parts.push(current.trim());
+                current = '';
+            }
+        } else {
+            current += char;
+        }
+    }
+
+    if (current.trim()) {
+        parts.push(current.trim());
+    }
+
+    if (parts.length === 0) return '""';
+    if (parts.length === 1) return transformExpression(parts[0]);
+
+    return parts.map(part => transformExpression(part)).join(' + ');
+}
+
+export function isVariable(str: string): boolean {
+    return /^\$(\w+)(\.\w+)*$/.test(str.trim());
 }
 
 /**

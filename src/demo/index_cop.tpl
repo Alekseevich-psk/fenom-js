@@ -49,6 +49,7 @@
         {/ignore}
     </ul>
 </section>
+    
 
 {* 3. Тернарные и логические операторы *}
 <section>
@@ -121,6 +122,23 @@
         <li><strong>Ключи объекта:</strong> {$arrForTest4|keys|join:', '}</li>
         <li><strong>JSON кодирование:</strong> {$items|json_encode}</li>
         <li><strong>Отладка (var_dump):</strong> {$items|var_dump}</li>
+    </ul>
+</section>
+
+{* ————————————————————————————————
+   6. БИТОВЫЕ И ПРОЧИЕ ОПЕРАТОРЫ
+   ———————————————————————————————— *}
+<section>
+    {set $valueBit1 = 101}
+    {set $valueBit2 = 011}
+    <h2>⚙️ Битовые и сравнительные операторы</h2>
+    <ul>
+        <li><strong>Побитовое ИЛИ (|):</strong> {$valueBit1 | $valueBit2} → 7 (101 | 011 = 111)</li>
+        <li><strong>Побитовое И (&):</strong> {$valueBit1 & $valueBit2} → 1 (101 & 011 = 001)</li>
+        <li><strong>Побитовое Исключающее ИЛИ (^):</strong> {$valueBit1 ^ $valueBit2} → 6 (101 ^ 011 = 110)</li>
+        <li><strong>Пространственный (<=></strong> {$valueBit1 <=> $valueBit2} → -1 (меньше)</li>
+        <li><strong>Пространственный:</strong> {$valueBit1 <=> $valueBit2} → 1 (больше)</li>
+        <li><strong>Равенство:</strong> {$valueBit1 <=> $valueBit2} → 0 (равно)</li>
     </ul>
 </section>
 
