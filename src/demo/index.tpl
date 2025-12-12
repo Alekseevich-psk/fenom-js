@@ -105,15 +105,18 @@
 
     <div class="block">
 
-        <div class="block__title">Foreach</div>
+        <div class="block__title">Циклы</div>
         <div class="block__fenom">
 
             {set $arr = ['test 1', 'test 2', 'test 3']}
 
-            {if $arr|length > 2}
-            {foreach $arr as $value}
-            {$value}
-            {/for}
+            {if $arr}
+            <ul>
+                {foreach $arr as $value}
+                <li>{$value}</li>
+                {/for}
+            </ul>
+
             {/if}
 
             длина

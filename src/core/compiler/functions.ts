@@ -114,3 +114,22 @@ export function warnFilter<T extends (...args: any[]) => any>(
         return fn(input, ...args);
     }) as T;
 }
+
+export function transformCondition(condition: string): string {
+    // Заменяем все вхождения $var|filter:arg → filters["filter"](context.var, arg)
+    return condition
+        .replace(/\$(\w+(?:\.\w+)*)(?:\|(\w+)(?::([^:\s}]+))?(?::([^:\s}]+))?)*/g, (match, varName, filter, arg1, arg2) => {
+            const contextVar = `context.${varName.replace(/\./g, '][')}`; // или используйте transformExpression('$' + varName)
+            const expr = transformExpression(`$${varName}`);
+
+            if (!filter) return expr;
+
+            // Обработка аргументов
+            const args: string[] = [];
+            if (arg1) args.push(/^['"]/.test(arg1) ? arg1 : transformExpression('$' + arg1));
+            if (arg2) args.push(/^['"]/.test(arg2) ? arg2 : transformExpression('$' + arg2));
+
+            const argList = args.join(', ');
+            return `filters["${filter}"](${expr}${argList ? ', ' + argList : ''})`;
+        });
+}

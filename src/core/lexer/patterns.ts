@@ -83,8 +83,8 @@ export const FOREACH_PATTERNS: TokenPattern[] = [
         type: 'for',
         regex: /^\{(for|foreach)\s*\$(\w+(?:\.\w+)?)\s+as\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
         process: (match) => ({
-            collection: match[2],  // 'arr'
-            item: match[3],        // 'value'
+            collection: `$${match[2]}`, // ✅ match[2] = 'arr'
+            item: match[3],             // ✅ match[3] = 'value'
             key: null,
             reverse: match[0].includes('| reverse')
         })
@@ -94,7 +94,7 @@ export const FOREACH_PATTERNS: TokenPattern[] = [
         type: 'for',
         regex: /^\{(for|foreach)\s*\$(\w+(?:\.\w+)?)\s+as\s*\$(\w+)\s*=>\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
         process: (match) => ({
-            collection: match[2],
+            collection: `$${match[2]}`, // ✅
             key: match[3],
             item: match[4],
             reverse: match[0].includes('| reverse')
@@ -312,26 +312,17 @@ export const MISC_PATTERNS: TokenPattern[] = [
 
 // --- ГРУППА: Вывод переменных с модификаторами ---
 export const OUTPUT_PATTERN: TokenPattern[] = [
-    {
-        type: 'output',
-        regex: /^\{\$([^\s}]+)\}/,
-        process: (match) => ({
-            name: match[1],
-            filters: []
-        })
-    },
-
-    // Поддержка: {output name="title"} → name: "title"
+    // 1. {output name="title"}
     {
         type: 'output',
         regex: /^\{output\s+name\s*=\s*(['"])(.*?)\1\s*\}/,
         process: (match) => ({
-            name: match[2], // ← здесь будет "name", а не name="name"
+            name: match[2],
             filters: []
         })
     },
 
-    // Поддержка: {output "$title"} → name: "$title"
+    // 2. {output "$title"} или {output $title}
     {
         type: 'output',
         regex: /^\{output\s+(['"])(.*?)\1\s*\}/,
@@ -340,8 +331,6 @@ export const OUTPUT_PATTERN: TokenPattern[] = [
             filters: []
         })
     },
-
-    // Поддержка: {output $title} → name: "$title"
     {
         type: 'output',
         regex: /^\{output\s+([^\s}]+)\s*\}/,
@@ -351,25 +340,32 @@ export const OUTPUT_PATTERN: TokenPattern[] = [
         })
     },
 
-    // Поддержка: {$a + $b}, {$count * 2}, {output $user.age + 18}
+    // 3. Выражения: {output $user.age + 18}
     {
         type: 'output',
         regex: /^\{output\s+(\$?[^}]+)\}/,
-        process: (match) => ({ name: match[1].trim(), filters: [] })
+        process: (match) => ({
+            name: match[1].trim(),
+            filters: []
+        })
     },
+
+    // 🔥 4. ОСНОВНОЙ случай: {$var}, {$var|filter}, {$var|filter:"arg"}
     {
         type: 'output',
-        regex: /^\{\$(\w+)\}/,
-        process: (match) => ({ name: match[1], filters: [] })
-    },
-    // Любое выражение в {$...}
-    {
-        type: 'output',
-        regex: /^\{\$(.+?)\}/,
-        process: (match) => ({ name: match[1].trim(), filters: [] })
+        regex: /^\{\$(.+?)\}/, // ← нежадный — ловит всё внутри
+        process: (match) => {
+            const content = match[1].trim();
+            const parts = content.split('|').map(s => s.trim());
+            const variable = parts[0];
+            const filters = parts.slice(1);
+            return {
+                name: `$${variable}`, // → '$arr'
+                filters             // → ['length']
+            };
+        }
     }
 ];
-
 // Поддержка ++, --, +=, -=, *= и т.д.
 export const OPERATOR_PATTERN: TokenPattern[] = [
     {

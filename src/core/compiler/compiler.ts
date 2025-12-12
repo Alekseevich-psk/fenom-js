@@ -2,6 +2,7 @@ import type { ASTNode, TemplateLoader } from '@/core/types/common';
 import { contextPath, parseValue, transformExpression } from './functions';
 import { tokenize } from '../lexer/tokenize';
 import { parse } from '../parser/parser';
+import { transformCondition } from './../compiler/functions';
 
 export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, filters: any) => string {
     const blocks: Record<string, ASTNode[]> = {};
@@ -162,21 +163,27 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
                 lines.push(`context.${node.variable} = (context.${node.variable} || 0) + 1;`);
                 break;
 
-            case 'if':
-                lines.push(`if (${contextPath(node.condition)}) {`);
+            case 'if': {
+                const condition = transformCondition(node.condition);
+                lines.push(`if (${condition}) {`);
                 node.body.forEach(compileNode);
-                if (node.elseIfs && node.elseIfs.length > 0) {
-                    node.elseIfs.forEach((elseIf: any) => {
-                        lines.push(`} else if (${contextPath(elseIf.condition)}) {`);
-                        elseIf.body.forEach(compileNode);
-                    });
-                }
-                if (node.elseBody && node.elseBody.length > 0) {
-                    lines.push(`} else {`);
+                lines.push('}');
+
+                // else if
+                node.elseIfs.forEach(elseIf => {
+                    const cond = transformCondition(elseIf.condition);
+                    lines.push(`else if (${cond}) {`);
+                    elseIf.body.forEach(compileNode);
+                    lines.push('}');
+                });
+
+                if (node.elseBody.length > 0) {
+                    lines.push('else {');
                     node.elseBody.forEach(compileNode);
+                    lines.push('}');
                 }
-                lines.push(`}`);
                 break;
+            }
 
             case 'for': {
                 const collection = transformExpression(node.collection); // → context.arr

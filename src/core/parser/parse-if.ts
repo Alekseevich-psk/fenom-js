@@ -1,6 +1,8 @@
+// parseIf.ts
 import type { Token } from '@/core/types/token';
+import { parse } from './../parser/parser'; 
 
-export function parseIf(tokens: Token[], index: number): { node: any; nextIndex: number; } {
+export function parseIf(tokens: Token[], index: number): { node: any; nextIndex: number } {
     const ifToken = tokens[index];
     const node: any = {
         type: 'if',
@@ -11,47 +13,56 @@ export function parseIf(tokens: Token[], index: number): { node: any; nextIndex:
     };
 
     let i = index + 1;
-    let depth = 0; // для вложенности
-    let currentElseIf: any = null;
+    let depth = 0;
+
+    // Собираем токены для каждой ветки
+    const bodyTokens: Token[] = [];
+    const elseIfs: { condition: string; tokens: Token[] }[] = [];
+    const elseTokens: Token[] = [];
+
+    let currentElseIf: { condition: string; tokens: Token[] } | null = null;
     let inElseBranch = false;
 
     while (i < tokens.length) {
         const token = tokens[i];
 
-        // Вложенные if — увеличиваем глубину
         if (token.type === 'if') {
             depth++;
         }
 
-        if (depth > 0) {
-            // Внутри вложенного блока — просто добавляем
-            if (!currentElseIf && !inElseBranch) {
-                node.body.push(token);
-            } else if (currentElseIf) {
-                currentElseIf.body.push(token);
-            } else if (inElseBranch) {
-                node.elseBody.push(token);
+        if (token.type === 'endif') {
+            if (depth === 0) {
+                // Завершаем текущий if
+                break;
             }
+            depth--;
+        }
 
-            if (token.type === 'endif') {
-                depth--;
+        if (depth > 0) {
+            // Внутри вложенного if — просто добавляем
+            if (!currentElseIf && !inElseBranch) {
+                bodyTokens.push(token);
+            } else if (currentElseIf) {
+                currentElseIf.tokens.push(token);
+            } else if (inElseBranch) {
+                elseTokens.push(token);
             }
             i++;
             continue;
         }
 
-        // Обработка основного уровня
+        // Обработка веток
         if (token.type === 'elseif') {
             if (!currentElseIf && !inElseBranch) {
                 currentElseIf = {
                     condition: token.condition,
-                    body: []
+                    tokens: []
                 };
-                node.elseIfs.push(currentElseIf);
+                elseIfs.push(currentElseIf);
             } else if (currentElseIf) {
-                currentElseIf.body.push(token);
+                currentElseIf.tokens.push(token);
             } else if (inElseBranch) {
-                node.elseBody.push(token);
+                elseTokens.push(token);
             }
             i++;
             continue;
@@ -64,24 +75,34 @@ export function parseIf(tokens: Token[], index: number): { node: any; nextIndex:
         }
 
         if (token.type === 'endif') {
-            // Завершаем if
-            return {
-                node,
-                nextIndex: i + 1
-            };
+            break;
         }
 
-        // Добавляем токен в нужную ветку
+        // Собираем токены
         if (!currentElseIf && !inElseBranch) {
-            node.body.push(token);
+            bodyTokens.push(token);
         } else if (currentElseIf) {
-            currentElseIf.body.push(token);
+            currentElseIf.tokens.push(token);
         } else if (inElseBranch) {
-            node.elseBody.push(token);
+            elseTokens.push(token);
         }
 
         i++;
     }
 
-    throw new Error('Unclosed if statement: expected {/if}');
+    // 🔥 ПАРСИМ собранные токены → в AST
+    node.body = parse(bodyTokens);
+
+    node.elseIfs = elseIfs.map(elif => ({
+        condition: elif.condition,
+        body: parse(elif.tokens)
+    }));
+
+    node.elseBody = parse(elseTokens);
+
+    // Возвращаем следующий индекс после {/if}
+    return {
+        node,
+        nextIndex: i + 1 // пропускаем {/if}
+    };
 }
