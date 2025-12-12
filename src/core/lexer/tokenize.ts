@@ -3,15 +3,15 @@ import * as Patterns from './patterns';
 
 // Объединяем все паттерны
 const ALL_PATTERNS: TokenPattern[] = [
-    ...Patterns.MISC_PATTERNS,
+    ...Patterns.EXTENDS_PATTERNS,
+    ...Patterns.INCLUDE_PATTERNS,
     ...Patterns.FOREACH_PATTERNS,
     ...Patterns.SWITCH_PATTERNS,
     ...Patterns.OPERATOR_PATTERN,
     ...Patterns.IF_PATTERNS,
     ...Patterns.IGNORE_PATTERN,
-    ...Patterns.EXTENDS_PATTERNS,
     ...Patterns.SET_PATTERNS,
-    ...Patterns.INCLUDE_PATTERNS,
+    ...Patterns.MISC_PATTERNS,
     ...Patterns.OUTPUT_PATTERN,
     ...Patterns.CYCLE_PATTERNS,
     ...Patterns.FILTER_PATTERNS,

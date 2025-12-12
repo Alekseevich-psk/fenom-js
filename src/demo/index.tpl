@@ -124,5 +124,8 @@
     </ul>
 </section>
 
+{* 6. Include *}
+{include 'file:chunks/header.tpl' titleTest="Тестовый заголовок - Header" desc="Include"}
+
 <a href="/about.html">about.html</a>
 {/block}
