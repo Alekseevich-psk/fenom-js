@@ -75,7 +75,10 @@ export function tokenize(input: string): Token[] {
             const match = substr.match(pattern.regex);
 
             if (match) {
-                const token: Token = { type: pattern.type };
+                const token: Token = {
+                    type: pattern.type,
+                    value: match[0] // ← добавляем оригинальный текст токена
+                };
 
                 if (pattern.type === 'comment') {
                     // Пропускаем: не добавляем в tokens

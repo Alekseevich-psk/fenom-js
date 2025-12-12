@@ -113,30 +113,36 @@ export function compile(ast: ASTNode[], loader: TemplateLoader): (context: any, 
                 lines.push(`out += ${JSON.stringify(node.value)};`);
                 break;
 
-            case 'output':
+            case 'output': {
                 const value = transformExpression(node.name);
-                let result = `(${value})`;
+                let result = value; // нет скобок
 
-                // Фильтры
-                node.filters.forEach((filter: string) => {
-                    const [name, ...args] = filter.split(':').map(s => s.trim());
-                    const argList = args.map(arg => {
+                // Применяем фильтры
+                for (const filter of node.filters) {
+                    const parts = filter.split(':').map(s => s.trim());
+                    const name = parts[0];
+                    const args = parts.slice(1).map(arg => {
                         if (/^['"].*['"]$/.test(arg)) return arg;
                         return transformExpression('$' + arg);
-                    }).join(', ');
+                    });
 
-                    if (argList) {
-                        result = `filters.${name}(${result}, ${argList})`;
-                    } else {
-                        result = `filters.${name}(${result})`;
-                    }
-                });
+                    const argList = args.length > 0 ? ', ' + args.join(', ') : '';
+                    result = `filters["${name}"](${result}${argList})`;
+                }
 
-                // Защита от [object Object]
-                result = `(typeof ${value} === 'object' || ${value} === null ? '' : ${result})`;
+                // ✅ Проверяем ТОЛЬКО если НЕ было фильтров
+                // Если фильтры были — доверяем им (например, length вернёт число)
+                if (node.filters.length === 0) {
+                    // Без фильтров: защищаем от [object Object]
+                    const safeValue = `(typeof ${value} === 'object' || ${value} === null ? '' : ${value})`;
+                    lines.push(`out += ${safeValue};`);
+                } else {
+                    // ✅ С фильтрами: доверяем результату
+                    lines.push(`out += ${result};`);
+                }
 
-                lines.push(`out += ${result};`);
                 break;
+            }
 
             case 'set':
                 // {set $name = 'Анна'} → context.name = 'Анна';

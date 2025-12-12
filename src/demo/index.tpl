@@ -116,7 +116,8 @@
             {/for}
             <br>
 
-            {$user.friends|length}
+            длина
+            {$name|length}
 
             <br>
 
