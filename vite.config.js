@@ -7,6 +7,8 @@ export default defineConfig(({ command, mode, isSsrBuild, isPreview }) => {
         viteFenomPlugin({
             root: './src/demo',
             dataDir: './src/demo/data',
+            pagesDir: 'pages',
+            scanAll: false,
             minify: true
         }),
     ];
