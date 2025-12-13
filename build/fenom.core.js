@@ -4,12 +4,12 @@ import { resolve } from 'path';
 export default defineConfig({
     build: {
         lib: {
-            entry: resolve(__dirname, 'src/core/vite-plugin-fenom.ts'),
-            name: 'FenomJS',
+            entry: resolve(__dirname, './../src/fenom/render.ts'),
+            name: 'fenom',
             formats: ['es', 'cjs'],
             fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
         },
-        outDir: 'FenomJS',
+        outDir: 'fenom',
         emptyOutDir: true,
     },
     resolve: {

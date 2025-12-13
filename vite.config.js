@@ -1,7 +1,9 @@
 import viteFenomPlugin from './src/vite/vite-plugin-fenom';
+import { resolve } from 'path';
 import { defineConfig } from 'vite';
 
-export default defineConfig(({ command, mode, isSsrBuild, isPreview }) => {
+export default defineConfig(({ command }) => {
+    const isBuild = command === 'build';
 
     const plugins = [
         viteFenomPlugin({
@@ -9,17 +11,9 @@ export default defineConfig(({ command, mode, isSsrBuild, isPreview }) => {
             dataDir: './src/demo/data',
             pagesDir: 'pages',
             scanAll: false,
-            minify: true
-        }),
+            minify: isBuild
+        })
     ];
-
-    const buildOptions = {
-        emptyOutDir: true,
-        outDir: 'dist',
-        rollupOptions: {
-            input: 'src/main.ts' // ← ключевая строка
-        }
-    };
 
     return {
         css: {
@@ -27,6 +21,11 @@ export default defineConfig(({ command, mode, isSsrBuild, isPreview }) => {
                 scss: {
                     sourceMap: true,
                 },
+            },
+        },
+        resolve: {
+            alias: {
+                '@': resolve(__dirname, 'src'),
             },
         },
         server: {
@@ -37,7 +36,13 @@ export default defineConfig(({ command, mode, isSsrBuild, isPreview }) => {
             },
         },
         base: './',
-        plugins: plugins,
-        build: buildOptions,
+        plugins,
+        build: {
+            emptyOutDir: true,
+            outDir: 'dist',
+            rollupOptions: {
+                input: 'src/main.ts'
+            }
+        }
     };
 });

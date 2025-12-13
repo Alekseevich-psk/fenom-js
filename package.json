@@ -9,8 +9,9 @@
         "dev": "vite",
         "preview": "vite preview",
         "build": "vite build",
-        "fenom": "vite build -c fenom.js",
-        "fenom-vite": "vite build -c fenom.vite.plugin.js"
+        "fenom-core": "vite build -c build/fenom.core.js",
+        "fenom-vite-plugin": "vite build -c build/fenom.vite.plugin.js",
+        "public-package": "node scripts/public-package.js"
     },
     "keywords": [
         "template",

@@ -1,4 +1,3 @@
-// src/core/vite-plugin-fenom.ts
 import type { Plugin, ResolvedConfig } from 'vite';
 import type { UserConfig } from '../fenom/types/common';
 
@@ -7,7 +6,8 @@ import { join, basename, dirname, relative, resolve } from 'path';
 
 import { collectJsonDataMerged } from '../fenom/compiler/functions';
 import { createSyncLoader } from '../fenom/loader/loader';
-import { FenomJs as render } from '../fenom/render';
+
+import { FenomJs } from './../fenom/render';
 
 export default function fenomPlugin(userOptions: UserConfig = {}): Plugin {
     const defaults = {
@@ -91,7 +91,7 @@ export default function fenomPlugin(userOptions: UserConfig = {}): Plugin {
                         const content = fs.readFileSync(tplPath, 'utf-8');
                         const data = collectJsonDataMerged(serverDataDir);
 
-                        const html = render(content, data, {
+                        const html = FenomJs(content, data, {
                             root: serverRoot,
                             loader: createSyncLoader(serverRoot),
                             minify
@@ -179,7 +179,7 @@ export default function fenomPlugin(userOptions: UserConfig = {}): Plugin {
                     const content = fs.readFileSync(tplPath, 'utf-8');
                     const data = collectJsonDataMerged(dataDir);
 
-                    const html = render(content, data, {
+                    const html = FenomJs(content, data, {
                         root,
                         loader: createSyncLoader(root),
                         minify

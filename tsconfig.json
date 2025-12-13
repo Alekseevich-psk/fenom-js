@@ -1,22 +1,23 @@
 {
     "compilerOptions": {
-        // "allowImportingTsExtensions": true,
         "moduleResolution": "bundler",
         "module": "ESNext",
         "target": "ESNext",
         "strict": true,
-        "outDir": "./fenom-js",
-        "rootDir": "./src/core",
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["src/*"],
+            "fenom": ["./src/fenom/render.ts"], // 🔥 для dev
+            "fenom/*": ["./src/fenom/*"]
+        },
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
         "isolatedModules": true,
-        "jsx": "preserve",
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["src/*"]
-        }
+        "jsx": "preserve"
     },
-    "include": ["src/core", "dist/vite-plugin-fenom.js"]
+    "include": ["src"]
 }

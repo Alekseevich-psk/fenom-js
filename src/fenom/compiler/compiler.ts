@@ -1,4 +1,4 @@
-import type { ASTNode, TemplateLoader } from '@/core/types/common';
+import type { ASTNode, TemplateLoader } from './../types/common';
 import { contextPath, parseValue, transformExpression } from './functions';
 import { tokenize } from '../lexer/tokenize';
 import { parse } from '../parser/parser';
