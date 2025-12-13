@@ -1,13 +1,13 @@
 // src/core/vite-plugin-fenom.ts
 import type { Plugin, ResolvedConfig } from 'vite';
-import type { UserConfig } from './types/common';
+import type { UserConfig } from '../fenom/types/common';
 
 import fs from 'node:fs';
 import { join, basename, dirname, relative, resolve } from 'path';
 
-import { collectJsonDataMerged } from './compiler/functions';
-import { createSyncLoader } from './loader/loader';
-import { render } from './render';
+import { collectJsonDataMerged } from '../fenom/compiler/functions';
+import { createSyncLoader } from '../fenom/loader/loader';
+import { FenomJs as render } from '../fenom/render';
 
 export default function fenomPlugin(userOptions: UserConfig = {}): Plugin {
     const defaults = {

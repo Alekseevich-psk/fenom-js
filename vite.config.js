@@ -1,4 +1,4 @@
-import viteFenomPlugin from './src/core/vite-plugin-fenom';
+import viteFenomPlugin from './src/vite/vite-plugin-fenom';
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ command, mode, isSsrBuild, isPreview }) => {

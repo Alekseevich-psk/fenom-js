@@ -1,4 +1,4 @@
-import type { TemplateLoader } from './../core/types/common';
+import type { TemplateLoader } from './types/common';
 
 import { parse } from './parser/parser';
 import { compile } from './compiler/compiler';
@@ -6,7 +6,7 @@ import { tokenize } from "./lexer/tokenize";
 import { filters } from "./filters/filters";
 import { minifyHTML } from './compiler/functions';
 
-export function render(
+export function FenomJs(
     template: string,
     context: Record<string, any>,
     options: {
