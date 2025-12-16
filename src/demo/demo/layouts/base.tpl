@@ -6,7 +6,7 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fenom-js</title>
-    <link rel="stylesheet" href="/src/demo/style.css" />
+    <link rel="stylesheet" href="/src/style.css" />
 </head>
 
 <body>
@@ -17,7 +17,7 @@
         </div>
     </main>
 
-    <script type="module" src="/src/demo/main.ts"></script>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 
 </html>

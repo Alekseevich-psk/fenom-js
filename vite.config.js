@@ -1,4 +1,4 @@
-import viteFenomPlugin from './src/vite/vite-plugin-fenom';
+import viteFenomPlugin from './src/vite-fenom-plugin/vite-fenom-plugin';
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 
@@ -10,7 +10,7 @@ export default defineConfig(({ command }) => {
             root: './src/demo',
             dataDir: './src/demo/data',
             pagesDir: 'pages',
-            scanAll: false,
+            scanAll: true,
             minify: isBuild
         })
     ];
@@ -41,7 +41,7 @@ export default defineConfig(({ command }) => {
             emptyOutDir: true,
             outDir: 'dist',
             rollupOptions: {
-                input: 'src/main.ts'
+                input: ['./src/demo/main.ts', './src/demo/style.css']
             }
         }
     };

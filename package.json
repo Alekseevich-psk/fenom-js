@@ -1,17 +1,19 @@
 {
     "name": "fenom-js",
-    "version": "0.1.1",
+    "version": "0.1.2",
+    "author": "@Alekseevich-psk",
     "description": "",
     "main": "dist/index.js",
     "module": "src/index.js",
     "type": "module",
     "scripts": {
+        "link:fenom": "node scripts/link-fenom.js",
         "dev": "vite",
         "preview": "vite preview",
         "build": "vite build",
-        "fenom-core": "vite build -c build/fenom.core.js",
-        "fenom-vite-plugin": "vite build -c build/fenom.vite.plugin.js",
-        "public-package": "node scripts/public-package.js"
+        "build:fenom": "tsc -p ./src/fenom-js/tsconfig.build.json & vite build -c ./src/fenom-js/fenom.build.js",
+        "build:vite-plugin": "tsc -p ./src/vite-fenom-plugin/tsconfig.build.json & vite build -c ./src/vite-fenom-plugin/vite-fenom-plugin.build.js",
+        "fenom:link": "node scripts/link-fenom.js"
     },
     "keywords": [
         "template",
@@ -19,7 +21,6 @@
         "js",
         "templating"
     ],
-    "author": "@Alekseevich-psk",
     "license": "MIT",
     "packageManager": "pnpm@10.9.0",
     "devDependencies": {
@@ -27,5 +28,8 @@
         "typescript": "~5.9.3",
         "vite": "^7.2.4",
         "vitest": "^4.0.15"
+    },
+    "dependencies": {
+        "rollup-plugin-dts": "^6.3.0"
     }
 }
