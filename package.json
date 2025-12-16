@@ -13,7 +13,6 @@
         "build": "vite build",
         "build:fenom": "tsc -p ./src/fenom-js/tsconfig.build.json & vite build -c ./src/fenom-js/fenom.build.js",
         "build:vite-plugin": "tsc -p ./src/vite-fenom-plugin/tsconfig.build.json & vite build -c ./src/vite-fenom-plugin/vite-fenom-plugin.build.js",
-        "fenom:link": "node scripts/link-fenom.js"
     },
     "keywords": [
         "template",
