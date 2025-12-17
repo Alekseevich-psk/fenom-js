@@ -6,6 +6,15 @@
     "main": "./index.cjs",
     "module": "./index.mjs",
     "types": "./types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./types/index.d.ts",
+            "default": "./index.js"
+        }
+    },
+    "engines": {
+        "node": ">=18"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Alekseevich-psk/fenom-js.git"
