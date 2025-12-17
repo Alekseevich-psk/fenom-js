@@ -6,6 +6,10 @@
     "main": "dist/index.js",
     "module": "src/index.js",
     "type": "module",
+    "workspaces": [
+        "src/fenom-js",
+        "src/vite-plugin-fenom"
+    ],
     "scripts": {
         "link:fenom": "node scripts/link-fenom.js",
         "dev": "vite",
@@ -13,7 +17,9 @@
         "build": "vite build",
         "build:fenom": "tsc -p ./src/fenom-js/tsconfig.build.json & vite build -c ./src/fenom-js/fenom.build.js",
         "build:vite-plugin": "tsc -p ./src/vite-plugin-fenom/tsconfig.build.json & vite build -c ./src/vite-plugin-fenom/vite-plugin-fenom.build.js",
-        "build:all": "npm run build:fenom & npm run build:vite-plugin & node scripts/copy-packages.js"
+        "build:copy-files": "node scripts/copy-packages.js",
+        "build:all": "pnpm run build:fenom & pnpm run build:vite-plugin & node scripts/copy-packages.js",
+        "build:clear": "node scripts/build-clear.js"
     },
     "keywords": [
         "template",

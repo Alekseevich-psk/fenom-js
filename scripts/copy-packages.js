@@ -7,8 +7,16 @@ const packages = [
     dest: path.resolve('fenom-js/package.json'),
   },
   {
+    src: path.resolve('readme.md'),
+    dest: path.resolve('fenom-js/readme.md'),
+  },
+  {
     src: path.resolve('src/vite-plugin-fenom/package.json'),
     dest: path.resolve('vite-plugin-fenom/package.json'),
+  },
+  {
+    src: path.resolve('readme.md'),
+    dest: path.resolve('vite-plugin-fenom/readme.md'),
   }
 ];
 
