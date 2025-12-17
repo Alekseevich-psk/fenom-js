@@ -15,6 +15,9 @@ dist
 dist-ssr
 *.local
 
+fenom-js
+vite-plugin-fenom
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
