@@ -1,24 +1,26 @@
 {
     "compilerOptions": {
+        "target": "ES2018",
+        "lib": ["ES2018", "DOM"],
+        "module": "ES2020",
         "moduleResolution": "bundler",
-        "module": "ESNext",
-        "target": "ESNext",
         "strict": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "declaration": true, 
+        "declarationDir": "./dist",
+        "emitDeclarationOnly": false,
+        "isolatedModules": true,
+        "jsx": "preserve",
         "outDir": "./dist",
         "rootDir": "./src",
         "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"],
-        },
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "declaration": true, // ✅ создавать .d.ts
-        "declarationDir": "./dist", // ✅ куда класть
-        "emitDeclarationOnly": false, // можно true, если только типы
-        "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule": true,
-        "isolatedModules": true,
-        "jsx": "preserve"
+            "@/*": ["src/*"]
+        }
     },
     "include": ["src"]
 }

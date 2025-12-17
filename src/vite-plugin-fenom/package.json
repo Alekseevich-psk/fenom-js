@@ -1,0 +1,20 @@
+{
+    "name": "fenom",
+    "version": "1.0.0",
+    "main": "./index.cjs",
+    "module": "./index.mjs",
+    "types": "./index.d.ts",
+    "files": [
+        "index.mjs",
+        "index.cjs",
+        "index.d.ts"
+    ],
+    "description": "Simple and fast template engine",
+    "keywords": [
+        "template",
+        "engine",
+        "html"
+    ],
+    "author": "@Alekseevich-psk",
+    "license": "MIT"
+}

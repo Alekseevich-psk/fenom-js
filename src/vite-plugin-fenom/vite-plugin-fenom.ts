@@ -7,8 +7,8 @@ import { join, basename, dirname, relative, resolve } from 'path';
 import { collectJsonDataMerged } from './scripts/functions';
 import { createSyncLoader } from './loader/loader';
 
-import { FenomJs } from '../fenom-js/index';
-// import { FenomJs } from 'fenom-js';
+// import { FenomJs } from '../fenom-js/index';
+import { FenomJs } from 'fenom-js';
 
 export default function fenomPlugin(userOptions: UserConfig = {}): Plugin {
     const defaults = {

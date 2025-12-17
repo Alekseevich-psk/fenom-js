@@ -1,4 +1,4 @@
-import viteFenomPlugin from './src/vite-fenom-plugin/vite-fenom-plugin';
+import viteFenomPlugin from './src/vite-plugin-fenom/vite-plugin-fenom';
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 

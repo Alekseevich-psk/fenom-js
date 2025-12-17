@@ -1,9 +1,9 @@
 {
     "extends": "./../../tsconfig.base.json",
     "compilerOptions": {
-        "outDir": "./../../vite-fenom-plugin/",
+        "outDir": "./../../vite-plugin-fenom/",
         "declaration": true,
-        "declarationDir": "./../../vite-fenom-plugin/types",
+        "declarationDir": "./../../vite-plugin-fenom/types",
         "emitDeclarationOnly": true,
         "rootDir": "./"
     },

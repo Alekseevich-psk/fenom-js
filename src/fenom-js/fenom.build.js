@@ -5,7 +5,7 @@ export default defineConfig({
     build: {
         outDir: 'fenom-js',
         emptyOutDir: false,
-        // minify: 'terser',
+        minify: "terser",
         lib: {
             entry: resolve(__dirname, './index.ts'),
             name: 'fenom-js',
