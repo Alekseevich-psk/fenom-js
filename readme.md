@@ -41,9 +41,43 @@ npm install fenom-js
 </script>
 ```
 
+##  🖥️Пример использования
+
+### В шаблонах .tpl
+```html
+<body>
+  <h1>Привет, {$name}!</h1>
+  {if $isAdmin}
+    <p>Вы — администратор.</p>
+  {/if}
+</body>
+```
+
+### Js context (В браузере) 
+```javascript
+import { FenomJs } from 'fenom-js';
+
+// Получаем HTML шаблона
+const templateHTML = document.body.innerHTML;
+
+// Данные
+const context = {
+  name: 'Анна',
+  isAdmin: true
+};
+
+// Рендерим
+const html = FenomJs(templateHTML, context);
+
+// Вставляем обратно
+document.body.innerHTML = html;
+```
+
 ## 🧩 vite-plugin-fenom
+📌 Это отдельный пакет, для работы с **vite** и **vituum**
+
 ```bash
-npm install fenom-js --save-dev
+npm install vite-plugin-fenom --save-dev
 ```
 
 ## ⚙️ Конфигурация (vite.config.ts или vite.config.js)
@@ -94,46 +128,6 @@ src/demo/
 
 Пример:
 **blocks/header.tpl → /blocks/header.html**
-
-##  🖥️Пример использования
-
-### В шаблонах .tpl
-```html
-<body>
-  <h1>Привет, {$name}!</h1>
-  {if $isAdmin}
-    <p>Вы — администратор.</p>
-  {/if}
-</body>
-```
-
-### Js context 
-```javascript
-import { FenomJs } from 'fenom-js';
-
-// Получаем HTML шаблона
-const templateHTML = document.body.innerHTML;
-
-// Данные
-const context = {
-  name: 'Анна',
-  isAdmin: true
-};
-
-// Рендерим
-const html = FenomJs(templateHTML, context);
-
-// Вставляем обратно
-document.body.innerHTML = html;
-```
-
-## 🔁 Поддержка MODX
-Создан с прицелом на совместимость с шаблонами fenom.php, используемыми в MODX Revo. Позволяет:
-
-Верстать шаблоны локально, без запуска PHP
-Проверять логику if, foreach, переменные
-Быстро прототипировать сниппеты и чанки
-> В браузере не поддерживаются {include}, {extends} — используйте только для локального рендера страниц.
 
 ## Статус
 🟡 Бета-версия — API может меняться.
