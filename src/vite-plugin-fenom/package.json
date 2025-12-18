@@ -16,5 +16,8 @@
         "html"
     ],
     "author": "@Alekseevich-psk",
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "fast-glob": "^3.3.3"
+    }
 }

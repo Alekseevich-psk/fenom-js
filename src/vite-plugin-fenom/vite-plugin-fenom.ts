@@ -1,10 +1,11 @@
 import type { Plugin, ResolvedConfig } from 'vite';
-import type { UserConfig } from './types/common';
+import type { UserConfig, ScanOptions, ScannedAssets } from './types/common';
 
 import fs from 'node:fs';
-import { join, basename, dirname, relative, resolve } from 'path';
+import { join, basename, relative, extname, dirname, resolve } from 'path';
 
-import { collectJsonDataMerged } from './scripts/functions';
+import { collectJsonDataMerged, } from './utils/functions';
+import { scanProject, escapeRegExp, getOutPath } from './utils/scan-assets';
 import { createSyncLoader } from './loader/loader';
 
 // import { FenomJs } from '../fenom-js/index';
@@ -16,7 +17,11 @@ export default function fenomPlugin(userOptions: UserConfig = {}): Plugin {
         dataDir: './src/data',
         pagesDir: 'pages',
         scanAll: false,
-        minify: false
+        minify: false,
+        assetInputs: [
+            'scripts/**/*.{js,ts,mjs}',
+            'styles/**/*.{css,pcss,scss,sass,less,styl,stylus}'
+        ]
     };
 
     const options = {
@@ -24,27 +29,34 @@ export default function fenomPlugin(userOptions: UserConfig = {}): Plugin {
         dataDir: userOptions.dataDir ?? defaults.dataDir,
         pagesDir: userOptions.pagesDir ?? defaults.pagesDir,
         scanAll: userOptions.scanAll ?? defaults.scanAll,
-        minify: userOptions.minify ?? defaults.minify
+        minify: userOptions.minify ?? defaults.minify,
+        assetInputs: userOptions.assetInputs ?? defaults.assetInputs
     };
 
+    // ✅ Вычисляем сразу
+    const root = resolve(process.cwd(), options.root);
+    const dataDir = resolve(process.cwd(), options.dataDir);
+    const resolvedPagesDir = options.pagesDir;
+
     let config: ResolvedConfig;
-    let root: string;
-    let dataDir: string;
     let minify: boolean;
-    let resolvedPagesDir: string;
+
+    // ✅ Сканируем синхронно
+    const scannedAssets = scanProject({
+        root,
+        pagesDir: resolvedPagesDir,
+        scanAll: options.scanAll,
+        assetInputs: options.assetInputs
+    });
 
     return {
         name: 'vite-plugin-fenom',
 
         configResolved(resolvedConfig) {
             config = resolvedConfig;
-            root = resolve(process.cwd(), options.root);
-            dataDir = resolve(process.cwd(), options.dataDir);
-            resolvedPagesDir = options.pagesDir;
             minify = options.minify;
         },
 
-        // 🔥 Dev-режим: обслуживание .tpl из pages/
         configureServer(server) {
             const serverRoot = root;
             const serverDataDir = dataDir;
@@ -127,78 +139,129 @@ export default function fenomPlugin(userOptions: UserConfig = {}): Plugin {
             });
         },
 
-        // ✅ Сборка: генерация .html
-        async generateBundle() {
-            if (config.command !== 'build') return;
+        config() {
+            const input: Record<string, string> = {};
 
-            const pagesDir = join(root, resolvedPagesDir);
+            scannedAssets.assetFiles.forEach(file => {
+                if (typeof file !== 'string') return;
 
-            if (!fs.existsSync(pagesDir)) {
-                this.warn(`[Fenom] Папка "${resolvedPagesDir}" не найдена: ${pagesDir}`);
-                return;
-            }
+                const normalized = file.replace(/\\/g, '/');
 
-            const tplFiles: string[] = [];
+                // 🔥 Получаем относительный путь: scripts/main.ts
+                const relPath = relative(root, file).replace(/\\/g, '/');
 
-            // Собираем .tpl из pages/ (рекурсивно)
-            function walk(dir: string) {
-                if (!fs.existsSync(dir)) return;
-                for (const item of fs.readdirSync(dir)) {
-                    const fullPath = join(dir, item);
-                    const stat = fs.statSync(fullPath);
-                    if (stat.isDirectory()) {
-                        walk(fullPath);
-                    } else if (item.endsWith('.tpl')) {
-                        tplFiles.push(fullPath);
-                    }
-                }
-            }
+                // ✅ Ключ: scripts/main.ts (относительный, не абсолютный)
+                input[relPath] = normalized;
+            });
 
-            walk(pagesDir);
+            if (Object.keys(input).length === 0) return {};
 
-            // Если scanAll = true → добавляем все .tpl вне pages/
-            if (options.scanAll) {
-                function walkAll(dir: string) {
-                    if (!fs.existsSync(dir)) return;
-                    for (const item of fs.readdirSync(dir)) {
-                        const fullPath = join(dir, item);
-                        const stat = fs.statSync(fullPath);
-                        if (stat.isDirectory()) {
-                            walkAll(fullPath);
-                        } else if (item.endsWith('.tpl') && !fullPath.startsWith(pagesDir)) {
-                            tplFiles.push(fullPath);
+            return {
+                build: {
+                    rollupOptions: {
+                        input,
+                        output: {
+                            entryFileNames(chunk) {
+                                const id = chunk.facadeModuleId;
+                                if (!id) return '[name].[hash].js';
+
+                                const normalizedId = id.replace(/\\/g, '/');
+                                const rel = relative(root, normalizedId).replace(/\\/g, '/');
+                                const ext = extname(rel).toLowerCase();
+                                const dir = dirname(rel);
+                                const name = basename(rel, ext);
+
+                                if (/\.(ts|js|mjs|jsx|tsx)$/.test(ext)) {
+                                    return `scripts/${name}.[hash].js`;
+                                }
+                                if (/\.(css|scss|sass|less|styl|stylus|pcss)$/.test(ext)) {
+                                    return `styles/${name}.[hash].css`;
+                                }
+
+                                return `${dir}/${name}.[hash].[ext]`.replace(/^\.\//, '');
+                            },
+                            chunkFileNames: 'chunks/[name].[hash].js',
+                            assetFileNames: '[name].[hash].[ext]'
                         }
                     }
                 }
-                walkAll(root);
+            };
+        },
+
+        async generateBundle(_config, bundle) {
+            if (config.command !== 'build') return;
+
+            const entryToBundle = new Map<string, string>();
+            const missingInBundle: string[] = [];
+            const missingOnDisk: string[] = [];
+
+            for (const [fileName, chunk] of Object.entries(bundle)) {
+                if (chunk.type === 'chunk' && chunk.facadeModuleId) {
+                    const id = chunk.facadeModuleId.replace(/\\/g, '/');
+                    entryToBundle.set(id, fileName);
+                }
+                if (chunk.type === 'asset' && chunk.name) {
+                    const name = chunk.name.replace(/\\/g, '/');
+                    entryToBundle.set(name, fileName);
+                }
             }
 
-            this.info(`[Fenom] Найдено шаблонов: ${tplFiles.length}`);
+            for (const assetPath of scannedAssets.assetFiles) {
+                const normalized = assetPath.replace(/\\/g, '/');
+                if (!entryToBundle.has(normalized)) {
+                    if (fs.existsSync(normalized)) {
+                        missingInBundle.push(normalized);
+                    } else {
+                        missingOnDisk.push(normalized);
+                    }
+                }
+            }
 
-            for (const tplPath of tplFiles) {
+            if (missingOnDisk.length > 0) {
+                this.warn(`[Fenom] Не найдены файлы на диске:\n  ${missingOnDisk.join('\n  ')}`);
+            }
+
+            if (missingInBundle.length > 0) {
+                this.warn(`[Fenom] Ассеты не попали в бандл:\n  ${missingInBundle.join('\n  ')}`);
+            }
+
+            for (const tplPath of scannedAssets.htmlEntries) {
                 try {
                     const content = fs.readFileSync(tplPath, 'utf-8');
                     const data = collectJsonDataMerged(dataDir);
+                    let html = FenomJs(content, data, { root, loader: createSyncLoader(root), minify });
 
-                    const html = FenomJs(content, data, {
-                        root,
-                        loader: createSyncLoader(root),
-                        minify
-                    });
+                    let replacementsCount = 0;
 
-                    // Определяем путь: относительно pagesDir (если внутри), иначе — относительно root
-                    const baseDir = tplPath.startsWith(pagesDir) ? pagesDir : root;
-                    const relativePath = relative(baseDir, tplPath);
-                    const fileName = basename(relativePath, '.tpl');
-                    const subDir = dirname(relativePath);
-                    const outDir = subDir === '.' ? '' : subDir;
-                    const outPath = join(outDir, `${fileName}.html`).replace(/\\/g, '/');
+                    for (const assetPath of scannedAssets.assetFiles) {
+                        const normalized = assetPath.replace(/\\/g, '/');
 
-                    // Rollup не принимает пути с ".." или "/"
-                    if (outPath.startsWith('..') || outPath.startsWith('/')) {
-                        this.warn(`[Fenom] Пропущен недопустимый путь: ${outPath}`);
-                        continue;
+                        // Ищем chunk по facadeModuleId
+                        const chunk = Object.values(bundle).find(
+                            b => b.type === 'chunk' && b.facadeModuleId === normalized
+                        );
+
+                        if (chunk) {
+                            const outputFile = chunk.fileName; // → scripts/main.abc123.js
+
+                            html = html
+                                .replace(
+                                    new RegExp(`<script[^>]+src\\s*=\\s*["']${escapeRegExp('/' + relative(process.cwd(), assetPath).replace(/\\/g, '/'))}["'][^>]*>`, 'gi'),
+                                    `<script src="/${outputFile}"></script>`
+                                )
+                                .replace(
+                                    new RegExp(`<link[^>]+href\\s*=\\s*["']${escapeRegExp('/' + relative(process.cwd(), assetPath).replace(/\\/g, '/'))}["'][^>]*>`, 'gi'),
+                                    `<link rel="stylesheet" href="/${outputFile}">`
+                                );
+                        }
                     }
+
+                    if (replacementsCount === 0 && (/<script[^>]+src=/i).test(content)) {
+                        this.warn(`[Fenom] В шаблоне "${basename(tplPath)}" есть теги <script> или <link>, но не заменены.`);
+                    }
+
+                    const outPath = getOutPath(tplPath, root, resolvedPagesDir);
+                    if (!outPath) continue;
 
                     this.emitFile({
                         type: 'asset',

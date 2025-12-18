@@ -9,17 +9,11 @@ export default defineConfig(({ command }) => {
             root: './src/demo',
             dataDir: './src/demo/data',
             pagesDir: 'pages',
-            scanAll: true,
             minify: isBuild
         })
     ];
 
     return {
         plugins,
-        build: {
-            rollupOptions: {
-                input: ['./src/demo/scripts/main.ts']
-            }
-        }
     };
 });
