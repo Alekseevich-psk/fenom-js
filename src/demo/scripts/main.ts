@@ -22,3 +22,5 @@
 //     // Вставляем обратно
 //     container.innerHTML = html;
 // })();
+
+console.log('test');

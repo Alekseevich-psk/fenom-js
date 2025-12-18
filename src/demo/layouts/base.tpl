@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fenom-js</title>
     <link rel="stylesheet" href="/src/demo/style.css" />
+    <link rel="icon" href="/svg/ico-favicon.svg" type="image/svg+xml">
 </head>
 
 <body>
