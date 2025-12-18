@@ -19,6 +19,7 @@
     </main>
 
     <script type="module" src="/scripts/main.ts"></script>
+    <script type="module" src="/scripts/test.ts"></script>
 </body>
 
 </html>

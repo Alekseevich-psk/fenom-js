@@ -1,10 +1,16 @@
 export interface UserConfig {
-    root?: string;           // корень проекта
-    dataDir?: string;        // где лежат JSON
-    pagesDir?: string;       // папка с "страницами" → по умолчанию "pages"
-    scanAll?: boolean;       // true → все .tpl → .html, false → только из pagesDir
-    minify?: boolean;        // минифицировать ли HTML
-    assetInputs?: string[];  // например: ['src/styles/**/*.{css,scss}', 'src/scripts/**/*.ts']
+    root?: string;                  // корень проекта
+    dataDir?: string;               // где лежат JSON
+    pagesDir?: string;              // папка с "страницами" → по умолчанию "pages"
+    scanAll?: boolean;              // true → все .tpl → .html, false → только из pagesDir
+    minify?: boolean;               // минифицировать ли HTML
+    assetInputs?: string[];         // например: ['src/styles/**/*.{css,scss}', 'src/scripts/**/*.ts']
+    useRelativePaths?: boolean;     // true → /pages/about.html, false → /about.html
+    entryNaming?: {
+        js?: string;
+        css?: string;
+        asset?: string;
+    };
 }
 
 export type TemplateLoader = (file: string) => string;
