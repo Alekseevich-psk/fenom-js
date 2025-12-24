@@ -22,12 +22,12 @@ async function run() {
         // Читаем шаблон
         const templatePath = resolve('./src/demo/pages/index.tpl');
         const template = await readFile(templatePath, 'utf-8');
-        console.log('📄 Шаблон загружен:', template); // ← добавь это
+        // console.log('📄 Шаблон загружен:', template); // ← добавь это
 
         const html = await FenomJs(template, data, { loader, root, minify: false });
 
         console.log('📏 Длина результата:', html.length); // ←
-        console.log('🔤 HTML:', html || '(пусто)');
+        // console.log('🔤 HTML:', html || '(пусто)');
 
         // (Опционально) записать в файл
         await writeFile('example/index.html', html, 'utf-8');
