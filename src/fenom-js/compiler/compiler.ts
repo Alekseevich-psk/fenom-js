@@ -26,7 +26,7 @@ export function compile(
                 const parentAst = parse(tokens);
 
                 const parentBlocks: Record<string, ASTNode[]> = {};
-                
+
                 for (const node of parentAst) {
                     if (node.type === 'block') {
                         parentBlocks[node.name] = node.body;
@@ -83,7 +83,7 @@ export function compile(
                         try {
                             const includedTemplate = await loader(node.file);
                             const incTokens = tokenize(includedTemplate);
-                            const incAst = parse(incAst);
+                            const incAst = parse(incTokens);
                             const newContext = { ...context };
                             if (node.params) {
                                 for (const [key, value] of Object.entries(node.params)) {
@@ -118,7 +118,7 @@ export function compile(
                     try {
                         const includedTemplate = await loader(node.file);
                         const incTokens = tokenize(includedTemplate);
-                        const incAst = parse(incAst);
+                        const incAst = parse(incTokens);
                         const newContext = { ...context };
                         if (node.params) {
                             for (const [key, value] of Object.entries(node.params)) {
