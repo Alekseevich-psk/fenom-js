@@ -1,5 +1,7 @@
 import type { ASTNode } from '../types/common';
-import { parseValue, transformExpression, getFromContext } from './functions';
+import { parseValue, transformExpression, getFromContext, applyFilters } from './functions';
+import { parseExpression } from '../parser/parse-expression';
+import { evaluate } from '../compiler/evaluate';
 
 export function compileNode(
     node: ASTNode,
@@ -8,45 +10,61 @@ export function compileNode(
     filters: any
 ): void {
     switch (node.type) {
+        case 'ignore_block':
+            addLine(node.content || '');
+            break;
+
+        case 'comment':
+            // Ничего не делаем — полностью игнорируем
+            break;
+
         case 'text':
             addLine(node.value);
             break;
 
         case 'output': {
-            const path = transformExpression(node.name);
-            let result = getFromContext(path, context);
-            if (result === undefined) result = '';
-
-            for (const filter of node.filters) {
-                const [name, ...args] = filter.split(':').map(s => s.trim());
-                const filterFn = filters[name];
-                if (typeof filterFn === 'function') {
-                    const filterArgs = args.map(arg => {
-                        if (/^["'].*["']$/.test(arg)) {
-                            return arg.slice(1, -1);
-                        } else if (!isNaN(+arg)) {
-                            return +arg;
-                        } else if (arg.startsWith('$')) {
-                            return getFromContext(arg.slice(1), context) ?? '';
-                        }
-                        return arg;
-                    });
-
-                    try {
-                        result = filterFn(result, ...filterArgs);
-                    } catch (e) {
-                        result = '';
-                    }
+            if (/[+\-*/%<>!=&|?:]/.test(node.name)) {
+                try {
+                    const ast = parseExpression(node.name);
+                    let result = evaluate(ast, context, filters);
+                    result = applyFilters(result, node.filters, context, filters);
+                    addLine(String(result));
+                } catch (e) {
+                    console.warn(`Eval error: ${node.name}`, e);
+                    addLine('');
                 }
+            } else {
+                const path = transformExpression(node.name);
+                let result = getFromContext(path, context) ?? '';
+                result = applyFilters(result, node.filters, context, filters);
+                addLine(String(result));
             }
-
-            addLine(String(result));
             break;
         }
 
-        case 'set':
-            context[node.variable] = parseValue(node.value);
+        case 'set': {
+            const { variable, value } = node;
+
+            // Выражение с операторами
+            if (/[+\-*/%~]/.test(value)) {
+                try {
+                    const ast = parseExpression(value);
+                    context[variable] = evaluate(ast, context, filters);
+                } catch (e) {
+                    context[variable] = '';
+                }
+            }
+            // Простая переменная: $other
+            else if (value.startsWith('$')) {
+                const path = value.slice(1);
+                context[variable] = getFromContext(path, context) ?? '';
+            }
+            // Простое значение
+            else {
+                context[variable] = parseValue(value);
+            }
             break;
+        }
 
         case 'var':
             if (context[node.variable] === undefined) {
@@ -59,7 +77,6 @@ export function compileNode(
             break;
 
         case 'if': {
-            // Обработка основного условия
             const path = transformExpression(node.condition);
             const cond = !!getFromContext(path, context);
 
@@ -132,6 +149,59 @@ export function compileNode(
                     compileNode(child, addLine, context, filters);
                 }
             }
+            break;
+        }
+
+        case 'operator': {
+            const { variable, operator, value } = node;
+            const rawValue = getFromContext(variable, context);
+            const currentValue = typeof rawValue === 'number' ? rawValue : +rawValue || 0;
+
+            let numericValue: number;
+            if (/^[\d.]+$/.test(value)) {
+                numericValue = parseFloat(value);
+            } else {
+                const val = getFromContext(value, context);
+                numericValue = typeof val === 'number' ? val : +val || 0;
+            }
+
+            let result: number;
+
+            switch (operator) {
+                case '++':
+                    result = currentValue;
+                    context[variable] = currentValue + 1;
+                    break;
+                case '--':
+                    result = currentValue;
+                    context[variable] = currentValue - 1;
+                    break;
+                case '+=':
+                    result = currentValue;
+                    context[variable] = currentValue + numericValue;
+                    break;
+                case '-=':
+                    result = currentValue;
+                    context[variable] = currentValue - numericValue;
+                    break;
+                case '*=':
+                    result = currentValue;
+                    context[variable] = currentValue * numericValue;
+                    break;
+                case '/=':
+                    result = currentValue;
+                    context[variable] = currentValue / numericValue;
+                    break;
+                case '%=':
+                    result = currentValue;
+                    context[variable] = currentValue % numericValue;
+                    break;
+                default:
+                    console.warn(`Unknown operator: ${operator}`);
+                    result = 0;
+            }
+
+            addLine(String(result));
             break;
         }
 

@@ -6,6 +6,16 @@
 
 <h1>🚀 Расширенная демонстрация возможностей Fenom</h1>
 
+{ignore}
+{set $name = "Анна"}
+{set $age = 28}
+{set $is_premium = true}
+{set $price = 1350}
+{set $discount = 0.15}
+{set $count = 5}
+{set $items = ['яблоко', 'банан', 'апельсин']}
+{/ignore}
+
 {* 1. Установка переменных *}
 {set $name = "Анна"}
 {set $age = 28}
@@ -19,30 +29,47 @@
 <section>
     <h2>🧮 Математические выражения</h2>
     <ul>
+
+        {set $test = $name ~ $name}
+        {$test}
+        
+        {set $count = 5}
         <li>Удвоение: {$count * 2}</li>
         {ignore}
         {$count * 2}
         {/ignore}
+
+        {set $count = 5}
         <li>Остаток от деления: {$count % 2}</li>
         {ignore}
         {$count % 2}
         {/ignore}
+
+        {set $count = 5}
         <li>Инкремент: {$count++} ~ {$count}</li>
         {ignore}
         {$count++} ~ {$count}
         {/ignore}
+
+        {set $count = 5}
         <li>Декремент: {$count--} ~ {$count}</li>
         {ignore}
         {$count--} ~ {$count}
         {/ignore}
+
+        {set $count = 5}
         <li>Присваивание: {$count += 10}</li>
         {ignore}
         {$count += 10}
         {/ignore}
+
+        {set $count = 5}
         <li>Сложение: {set $count = $count + $count} {$count}</li>
         {ignore}
         {set $count = $count + $count} {$count}
         {/ignore}
+
+        {set $count = 5}
         <li>Вычитание: {set $count = $count - $count} {$count}</li>
         {ignore}
         {set $count = $count - $count} {$count}

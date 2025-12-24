@@ -5,14 +5,47 @@ export function contextPath(path: string): string {
     return isNaN(+path) ? `'${path}'` : path;
 }
 
-export function parseValue(value: string): string {
-    if (value.startsWith('$')) {
-        return contextPath(value);
+export function parseValue(value: string): any {
+    // Убираем пробелы
+    value = value.trim();
+
+    // Булевы
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (value === 'null') return null;
+    if (value === 'undefined') return undefined;
+
+    // Число
+    if (!isNaN(+value) && !value.includes(' ')) {
+        return +value;
     }
-    if (/^['"].*['"]$/.test(value)) {
-        return value;
+
+    // Строка в кавычках
+    if (/^["'](.*)["']$/.test(value)) {
+        return value.slice(1, -1);
     }
-    return isNaN(+value) ? `'${value}'` : value;
+
+    // Массив: ['a', 'b'] → только простые
+    if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+            const items = value.slice(1, -1).split(',').map(s => s.trim());
+            return items.map(parseValue);
+        } catch { }
+    }
+
+    // Объект: {a:1} → упрощённо
+    if (value.startsWith('{') && value.endsWith('}')) {
+        try {
+            return JSON.parse(value
+                .replace(/(\w+):/g, '"$1":')
+                .replace(/'/g, '"')
+            );
+        } catch { }
+    }
+
+    // Переменная? Нет — возвращаем как строку
+    // ❌ Не разрешаем $ здесь — это делает parseExpression
+    return value;
 }
 
 export function transformExpression(exp: string): string {
@@ -91,4 +124,26 @@ export function getFromContext(path: string, context: any): any {
     }
 
     return value;
+}
+
+export function applyFilters(value: any, filterList: string[], context: any, filters: any): any {
+    let result = value;
+    for (const filter of filterList) {
+        const [name, ...args] = filter.split(':').map(s => s.trim());
+        const filterFn = filters[name];
+        if (typeof filterFn === 'function') {
+            const argValues = args.map(arg => {
+                if (/^["'].*["']$/.test(arg)) return arg.slice(1, -1);
+                if (!isNaN(+arg)) return +arg;
+                if (arg.startsWith('$')) return getFromContext(arg.slice(1), context) ?? '';
+                return arg;
+            });
+            try {
+                result = filterFn(result, ...argValues);
+            } catch (e) {
+                result = '';
+            }
+        }
+    }
+    return result;
 }
