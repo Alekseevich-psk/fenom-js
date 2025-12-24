@@ -1,28 +1,9 @@
-export interface UserConfig {
-    root?: string;                  // корень проекта
-    dataDir?: string;               // где лежат JSON
-    pagesDir?: string;              // папка с "страницами" → по умолчанию "pages"
-    scanAll?: boolean;              // true → все .tpl → .html, false → только из pagesDir
-    minify?: boolean;               // минифицировать ли HTML
-    assetInputs?: string[];         // например: ['src/styles/**/*.{css,scss}', 'src/scripts/**/*.ts']
-    useRelativePaths?: boolean;     // true → /pages/about.html, false → /about.html
-    entryNaming?: {
-        js?: string;
-        css?: string;
-        asset?: string;
-    };
-}
-
-export type TemplateLoader = (file: string) => string;
-
-export interface ScanOptions {
-    root: string;
-    pagesDir: string;
-    scanAll?: boolean;
-    assetInputs?: string[]; // например: ['src/styles/**/*.{css,scss}', 'src/scripts/**/*.ts']
-}
-
-export interface ScannedAssets {
-    htmlEntries: string[];     // .tpl файлы
-    assetFiles: string[];      // найденные ассеты (js, css)
+export interface PluginUserConfig {
+    root?: string;
+    include?: string[];
+    exclude?: string[];
+    data?: string[];
+    formats?: string[];
+    ignoredPaths?: string[];
+    minify?: boolean;
 }

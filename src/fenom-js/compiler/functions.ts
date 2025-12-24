@@ -1,73 +1,22 @@
-export const contextPath = (expr: string): string => {
-    // Пока: просто поддержим ?: и !: одинаково
-    expr = expr.replace(/(\$[a-zA-Z_]\w*(?:\.\w+)*)\s*[\?:!]\s*:/g, '$1 ? $1 : ');
-    return expr.replace(/\$([a-zA-Z_]\w*(?:\.\w+)*)/g, 'context.$1');
-};
+export function contextPath(path: string): string {
+    if (path.startsWith('$')) {
+        return `context.${path.slice(1)}`;
+    }
+    return isNaN(+path) ? `'${path}'` : path;
+}
 
-export const parseValue = (value: string): string => {
-    value = value.trim();
-
-    if (value === 'true') return 'true';
-    if (value === 'false') return 'false';
-    if (value === 'null') return 'null';
-    if (value === 'undefined') return 'undefined';
-
-    // Число
-    if (!isNaN(Number(value)) && !value.includes(' ')) {
+export function parseValue(value: string): string {
+    if (value.startsWith('$')) {
+        return contextPath(value);
+    }
+    if (/^['"].*['"]$/.test(value)) {
         return value;
     }
+    return isNaN(+value) ? `'${value}'` : value;
+}
 
-    // Массив или объект
-    if (
-        (value.startsWith('[') && value.endsWith(']')) ||
-        (value.startsWith('{') && value.endsWith('}'))
-    ) {
-        // Заменяем все $var → context.var
-        return value.replace(/\$(\w+)/g, 'context.$1');
-    }
-
-    // Выражение: $count + 1, $a * $b, 5 - $x и т.д.
-    if (value.includes('$')) {
-        return value.replace(/\$(\w+)/g, 'context.$1');
-    }
-
-    // Строка (все остальные случаи)
-    return JSON.stringify(value);
-};
-
-export function transformExpression(expr: string): string {
-    const trimmed = expr.trim();
-
-    // 🔥 СНАЧАЛА проверяем ~
-    if (trimmed.includes('~')) {
-        return transformConcatenation(trimmed);
-    }
-
-    // Потом строки
-    if (/^['"].*['"]$/.test(trimmed)) {
-        return trimmed;
-    }
-
-    // Числа
-    if (/^\d+$/.test(trimmed)) {
-        return trimmed;
-    }
-
-    // Логика
-    if (trimmed === 'true' || trimmed === 'false' || trimmed === 'null') {
-        return trimmed;
-    }
-
-    // Переменные
-    if (trimmed.startsWith('$')) {
-        const path = trimmed.slice(1).split('.');
-        return path.length > 1
-            ? `(${path.map((_, i) => 'context.' + path.slice(0, i + 1).join('.')).join(' != null ? ') + ' != null ? context.' + path.join('.') + ':null'.repeat(path.length)})`
-            : `context.${path[0]}`;
-    }
-
-    // Остальное — как есть (выражение)
-    return `(${trimmed})`;
+export function transformExpression(exp: string): string {
+    return exp.startsWith('$') ? exp.slice(1) : exp;
 }
 
 function transformConcatenation(expr: string): string {
@@ -107,49 +56,18 @@ export function isVariable(str: string): boolean {
     return /^\$(\w+)(\.\w+)*$/.test(str.trim());
 }
 
-export function warnFilter<T extends (...args: any[]) => any>(
-    name: string,
-    expected: 'array' | 'string' | 'object' | 'number',
-    fn: T
-): T {
-    return ((input: any, ...args: any[]) => {
-        const type = typeof input;
-        const isArray = Array.isArray(input);
-        const isString = type === 'string';
-        const isObject = input && typeof input === 'object' && !isArray;
-
-        let matches = false;
-        if (expected === 'array') matches = isArray;
-        if (expected === 'string') matches = isString;
-        if (expected === 'object') matches = isObject;
-        if (expected === 'number') matches = !isNaN(Number(input));
-
-        if (!matches && input !== undefined && input !== null) {
-            const typeName = isArray ? 'array' : isString ? 'string' : isObject ? 'object' : type;
-            console.warn(`[Fenom] filter '${name}' expects ${expected}, got ${typeName}`);
-        }
-
-        return fn(input, ...args);
-    }) as T;
+export function warnFilter(name: string, type: string, fn: (...args: any[]) => any) {
+    return (...args: any[]) => {
+        console.warn(`[Fenom] filter '${name}' is deprecated or should be used with ${type}`);
+        return fn(...args);
+    };
 }
 
-export function transformCondition(condition: string): string {
-    // Заменяем все вхождения $var|filter:arg → filters["filter"](context.var, arg)
-    return condition
-        .replace(/\$(\w+(?:\.\w+)*)(?:\|(\w+)(?::([^:\s}]+))?(?::([^:\s}]+))?)*/g, (match, varName, filter, arg1, arg2) => {
-            const contextVar = `context.${varName.replace(/\./g, '][')}`; // или используйте transformExpression('$' + varName)
-            const expr = transformExpression(`$${varName}`);
-
-            if (!filter) return expr;
-
-            // Обработка аргументов
-            const args: string[] = [];
-            if (arg1) args.push(/^['"]/.test(arg1) ? arg1 : transformExpression('$' + arg1));
-            if (arg2) args.push(/^['"]/.test(arg2) ? arg2 : transformExpression('$' + arg2));
-
-            const argList = args.join(', ');
-            return `filters["${filter}"](${expr}${argList ? ', ' + argList : ''})`;
-        });
+export function transformCondition(cond: string): string {
+    return cond
+        .replace(/\$(\w+)/g, 'context.$1')
+        .replace(/&&/g, '&&')
+        .replace(/\|\|/g, '||');
 }
 
 export function minifyHTML(html: string): string {
@@ -158,4 +76,19 @@ export function minifyHTML(html: string): string {
         .replace(/\s{2,}/g, ' ')           // множественные пробелы
         .replace(/(<!--.*?-->)\s+/g, '$1') // пробелы после комментариев
         .trim();
+}
+
+export function getFromContext(path: string, context: any): any {
+
+    const keys = path.split('.').map(k => k.trim());
+    let value: any = context;
+
+    for (const key of keys) {
+        if (value == null || typeof value !== 'object') {
+            return undefined;
+        }
+        value = value[key];
+    }
+
+    return value;
 }

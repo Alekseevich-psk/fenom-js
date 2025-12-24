@@ -1,25 +1,63 @@
-// import { FenomJs } from './../fenom-js/index';
+import { FenomJs, createAsyncLoader } from 'fenom-js'; // ← ESM: .js
+import { join } from 'path';
 
-// const template = document.querySelector('body') as HTMLElement | null;
+const root = join(process.cwd(), 'src', 'templates');
 
-// // === Запуск на странице ===
-// (function () {
-//     const container = document.querySelector('body') as HTMLElement | null;
-//     if (!container) return;
+// Создаём асинхронный загрузчик шаблонов
+const loader = createAsyncLoader(root);
 
-//     // Сохраним только внутренний HTML, но не запускай скрипты
-//     const templateHTML = container.innerHTML;
+// Читаем шаблон (можно и через fs, но ради теста — вручную)
+const template = `{extends "layout.tpl"}
 
-//     // Твои данные
-//     const context = {
-//         name: 'Анна',
-//         isAdmin: true
-//     };
+{block "title"}Главная{/block}
 
-//     // Рендерим
-//     const html = FenomJs(templateHTML, context);
+{block "content"}
+    <h1>Привет, {$name|capitalize}!</h1>
+    <p>Статус: {$status|upper}</p>
+    <p>Дата: {date($timestamp, 'd.m.Y')}</p>
 
-//     // Вставляем обратно
-//     container.innerHTML = html;
-// })();
-console.log('test');
+    {if $users}
+        <ul>
+        {foreach $users as $user}
+            <li>{$user.name} — {$user.email|lower}</li>
+        {/foreach}
+        </ul>
+    {else}
+        <p>Нет пользователей</p>
+    {/if}
+
+    {$rawHtml|raw}
+{/block}
+`;
+
+// Контекст
+const context = {
+    name: 'анна',
+    status: 'active',
+    timestamp: Date.now() / 1000,
+    users: [
+        { name: 'Иван', email: 'IVAN@EXAMPLE.COM' },
+        { name: 'Мария', email: 'MARIA@EXAMPLE.COM' }
+    ],
+    rawHtml: '<div style="color:green">Это <b>сырой HTML</b></div>'
+};
+
+// Асинхронная функция для запуска теста
+async function testFenom() {
+    try {
+        const html = await FenomJs(template, context, {
+            root,
+            loader,
+            minify: false
+        });
+
+        console.log('✅ Результат рендеринга:\n');
+        console.log(html);
+    } catch (err) {
+        console.error('❌ Ошибка:', err);
+    }
+}
+
+// Запуск
+testFenom();
+

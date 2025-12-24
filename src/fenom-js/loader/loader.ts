@@ -1,20 +1,22 @@
 import type { TemplateLoader } from './../types/common';
 
 import { join } from 'path';
-import { readFileSync } from 'fs';
+import { readFile } from 'fs/promises';
 
-export function createSyncLoader(root: string): TemplateLoader {
-    return function loader(file: string) {
+export function createAsyncLoader(root: string): TemplateLoader {
+    return async function loader(file: string): Promise<string> {
         const fullPath = join(root, file);
-
-        if (!fullPath.endsWith('.tpl')) {
-            throw new Error(`Template path must end with .tpl: ${file}`);
+        console.log('🔍 Пытаемся загрузить:', fullPath); // ←
+        try {
+            const content = await readFile(fullPath, 'utf-8');
+            console.log('✅ Успешно загружено:', file); // ←
+            return content;
+        } catch (err: any) {
+            console.log('❌ Ошибка загрузки:', file, err.message); // ←
+            if (err.code === 'ENOENT') {
+                throw new Error(`Template not found: ${fullPath}`);
+            }
+            throw err;
         }
-
-        if (!readFileSync(fullPath, 'utf-8')) {
-            throw new Error(`Template not found: ${fullPath}`);
-        }
-        
-        return readFileSync(fullPath, 'utf-8');
     };
 }
