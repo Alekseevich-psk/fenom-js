@@ -114,6 +114,11 @@ export function parse(tokens: Token[]): ASTNode[] {
             continue;
         }
 
+        if (['elseif', 'else', 'endif', 'endfor', 'endforeach', 'endswitch'].includes(token.type)) {
+            i++;
+            continue;
+        }
+
         // Простые токены
         ast.push({ ...token });
         i++;

@@ -1,8 +1,8 @@
 // parseIf.ts
 import type { Token } from './../types/token';
-import { parse } from './../parser/parser'; 
+import { parse } from './../parser/parser';
 
-export function parseIf(tokens: Token[], index: number): { node: any; nextIndex: number } {
+export function parseIf(tokens: Token[], index: number): { node: any; nextIndex: number; } {
     const ifToken = tokens[index];
     const node: any = {
         type: 'if',
@@ -17,10 +17,10 @@ export function parseIf(tokens: Token[], index: number): { node: any; nextIndex:
 
     // Собираем токены для каждой ветки
     const bodyTokens: Token[] = [];
-    const elseIfs: { condition: string; tokens: Token[] }[] = [];
+    const elseIfs: { condition: string; tokens: Token[]; }[] = [];
     const elseTokens: Token[] = [];
 
-    let currentElseIf: { condition: string; tokens: Token[] } | null = null;
+    let currentElseIf: { condition: string; tokens: Token[]; } | null = null;
     let inElseBranch = false;
 
     while (i < tokens.length) {
@@ -69,6 +69,8 @@ export function parseIf(tokens: Token[], index: number): { node: any; nextIndex:
         }
 
         if (token.type === 'else') {
+            // 🔴 Завершаем текущий elseif
+            currentElseIf = null;
             inElseBranch = true;
             i++;
             continue;

@@ -95,7 +95,7 @@ export function compileNode(
                 for (const elseIf of node.elseIfs) {
                     let elseIfCond = false;
                     try {
-                        const ast = parseExpression(elseIf.condition); // ← elseIf.condition, не node.condition!
+                        const ast = parseExpression(elseIf.condition);
                         elseIfCond = !!evaluate(ast, context, filters);
                     } catch (e) {
                         console.warn(`Condition error: ${elseIf.condition}`, e);
@@ -104,6 +104,8 @@ export function compileNode(
 
                     if (elseIfCond) {
                         for (const child of elseIf.body) {
+                            console.log('child', child);
+                            
                             compileNode(child, addLine, context, filters);
                         }
                         executed = true;
