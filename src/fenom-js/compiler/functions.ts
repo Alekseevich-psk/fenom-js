@@ -89,9 +89,31 @@ export function isVariable(str: string): boolean {
     return /^\$(\w+)(\.\w+)*$/.test(str.trim());
 }
 
-export function warnFilter(name: string, type: string, fn: (...args: any[]) => any) {
+export function warnFilter(
+    name: string,
+    expected: 'array' | 'string' | 'object',
+    fn: (...args: any[]) => any
+) {
     return (...args: any[]) => {
-        console.warn(`[Fenom] filter '${name}' is deprecated or should be used with ${type}`);
+        const value = args[0];
+        let isValid = false;
+
+        switch (expected) {
+            case 'array':
+                isValid = Array.isArray(value);
+                break;
+            case 'string':
+                isValid = typeof value === 'string';
+                break;
+            case 'object':
+                isValid = value && typeof value === 'object' && !Array.isArray(value);
+                break;
+        }
+
+        if (!isValid) {
+            console.warn(`[Fenom] filter '${name}' should be used with ${expected}, but got ${typeof value}`);
+        }
+
         return fn(...args);
     };
 }

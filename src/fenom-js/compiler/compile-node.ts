@@ -77,8 +77,14 @@ export function compileNode(
             break;
 
         case 'if': {
-            const path = transformExpression(node.condition);
-            const cond = !!getFromContext(path, context);
+            let cond = false;
+            try {
+                const ast = parseExpression(node.condition);
+                cond = !!evaluate(ast, context, filters);
+            } catch (e) {
+                console.warn(`Condition error: ${node.condition}`, e);
+                cond = false;
+            }
 
             if (cond) {
                 for (const child of node.body) {
@@ -87,8 +93,15 @@ export function compileNode(
             } else if (node.elseIfs?.length) {
                 let executed = false;
                 for (const elseIf of node.elseIfs) {
-                    const elseIfPath = transformExpression(elseIf.condition);
-                    const elseIfCond = !!getFromContext(elseIfPath, context);
+                    let elseIfCond = false;
+                    try {
+                        const ast = parseExpression(elseIf.condition); // ← elseIf.condition, не node.condition!
+                        elseIfCond = !!evaluate(ast, context, filters);
+                    } catch (e) {
+                        console.warn(`Condition error: ${elseIf.condition}`, e);
+                        elseIfCond = false;
+                    }
+
                     if (elseIfCond) {
                         for (const child of elseIf.body) {
                             compileNode(child, addLine, context, filters);
@@ -109,6 +122,7 @@ export function compileNode(
             }
             break;
         }
+
 
 
         case 'for': {

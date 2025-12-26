@@ -72,7 +72,7 @@ export function parse(tokens: Token[]): ASTNode[] {
         if (token.type === 'if') {
             const { node, nextIndex } = parseIf(tokens, i);
             ast.push(node);
-            i = nextIndex;
+            i = nextIndex;  // ← сначала обновляем
             continue;
         }
 

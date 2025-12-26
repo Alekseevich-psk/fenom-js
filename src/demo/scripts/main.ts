@@ -52,7 +52,7 @@ async function testFenom() {
         });
 
         console.log('✅ Результат рендеринга:\n');
-        console.log(html);
+        // console.log(html);
     } catch (err) {
         console.error('❌ Ошибка:', err);
     }

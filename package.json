@@ -8,6 +8,7 @@
     "type": "module",
     "scripts": {
         "link:fenom": "node scripts/link-fenom.js",
+        "test:render": "node test-render.js",
         "dev": "vite",
         "preview": "vite preview",
         "build": "vite build",
