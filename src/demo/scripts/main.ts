@@ -51,7 +51,7 @@ async function testFenom() {
             minify: false
         });
 
-        console.log('✅ Результат рендеринга:\n');
+        // console.log('✅ Результат рендеринга:\n');
         // console.log(html);
     } catch (err) {
         console.error('❌ Ошибка:', err);

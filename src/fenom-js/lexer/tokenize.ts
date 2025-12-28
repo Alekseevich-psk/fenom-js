@@ -12,10 +12,10 @@ const ALL_PATTERNS: TokenPattern[] = [
     ...Patterns.IGNORE_PATTERN,
     ...Patterns.SET_PATTERNS,
     ...Patterns.MISC_PATTERNS,
-    ...Patterns.OUTPUT_PATTERN,
     ...Patterns.CYCLE_PATTERNS,
     ...Patterns.FILTER_PATTERNS,
     ...Patterns.MACRO_PATTERNS,
+    ...Patterns.OUTPUT_PATTERN,
 ];
 
 export function tokenize(input: string): Token[] {

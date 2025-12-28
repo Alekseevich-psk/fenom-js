@@ -104,8 +104,6 @@ export function compileNode(
 
                     if (elseIfCond) {
                         for (const child of elseIf.body) {
-                            console.log('child', child);
-                            
                             compileNode(child, addLine, context, filters);
                         }
                         executed = true;

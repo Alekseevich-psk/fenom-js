@@ -26,12 +26,12 @@ async function run() {
 
         const html = await FenomJs(template, data, { loader, root, minify: false });
 
-        console.log('📏 Длина результата:', html.length); // ←
+        // console.log('📏 Длина результата:', html.length); // ←
         // console.log('🔤 HTML:', html || '(пусто)');
 
         // (Опционально) записать в файл
         await writeFile('example/index.html', html, 'utf-8');
-        console.log('\n📜 Сохранено в example/index.html');
+        // console.log('\n📜 Сохранено в example/index.html');
     } catch (err) {
         console.error('❌ Ошибка рендеринга:', err);
     }
