@@ -34,16 +34,18 @@ export function compile(
                 }
 
                 const finalBlocks = { ...parentBlocks, ...blocks };
-
                 const blockContent: Record<string, string> = {};
+                
                 context.block = async (name: string): Promise<string> => {
                     if (blockContent[name] !== undefined) return blockContent[name];
                     const blockAst = finalBlocks[name];
+                    
                     if (!blockAst) {
                         blockContent[name] = '';
                         return '';
                     }
                     let out = '';
+
                     const localContext = { ...context };
                     for (const node of blockAst) {
                         if (node.type === 'include') {

@@ -1,23 +1,16 @@
 import { defineConfig } from 'vite';
-import fenom from './src/vite-plugin-fenom/vite-plugin-fenom.ts';
+import fenom from 'vite-plugin-fenom';
 
 export default defineConfig({
     plugins: [
         fenom({
+            pages: 'src/demo/pages',
+            data: 'src/demo/data/**/*.json',
             root: 'src/demo',
-            data: ['src/demo/data/**/*.json'],
-            formats: ['tpl'],
             globals: {
-                site: 'My Site',
-                env: 'production',
-            },
-            minify: true,
-            reload: true,
-        }),
+                siteName: 'Fenom Demo'
+            }
+        })
     ],
-    build: {
-        rollupOptions: {
-            input: './src/demo/pages/index.tpl',
-        },
-    },
+    clearScreen: false
 });
