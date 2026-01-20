@@ -6,7 +6,7 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{block "title"}Заголовок по умолчанию{/block}</title>
-    <link rel="stylesheet" href="/styles/style.css" />
+    <link rel="stylesheet" href="src/demo/styles/style.css" />
     <link rel="icon" href="/svg/ico-favicon.svg" type="image/svg+xml">
 </head>
 

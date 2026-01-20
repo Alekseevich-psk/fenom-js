@@ -1,10 +1,9 @@
 {extends 'file:layouts/base.tpl'}
-{block "title"}Расширенная демонстрация Fenom{/block}
+{block "title"}Расширенная демонстрация Fenom!{/block}
 
 {block "main"}
 
-
-<h1>🚀 Расширенная демонстрация возможностей Fenom</h1>
+    <h1>🚀 Расширенная демонстрация возможностей Fenom</h1>
 
 {ignore}
 {set $name = "Анна"}
@@ -147,5 +146,5 @@
 {* 6. Include *}
 {include 'file:chunks/header.tpl' titleTest="Тестовый заголовок - Header" desc="Include"}
 
-<a href="/about.html">about.html</a>
+<a href="/about">about.html</a>
 {/block}
