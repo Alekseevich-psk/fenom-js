@@ -2,9 +2,6 @@ import { defineConfig } from 'vite';
 import fenom from 'vite-plugin-fenom';
 
 export default defineConfig({
-    server: {
-        port: 5173,
-    },
     plugins: [
         fenom({
             pages: 'src/demo/pages',
@@ -12,5 +9,12 @@ export default defineConfig({
             root: 'src/demo',
             debug: true
         })
-    ]
+    ],
+    build: {
+        outDir: 'dist',
+        emptyOutDir: true,
+        rollupOptions: {
+            input: ['src/demo/scripts/main.ts', 'src/demo/styles/style.css'],
+        },
+    },
 });

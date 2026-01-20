@@ -1,9 +1,11 @@
 import type { Plugin, ResolvedConfig } from 'vite';
-import { join, relative, resolve } from 'path';
+import { join, relative, resolve, dirname, basename } from 'path';
+import * as fs from 'fs/promises';
 
-// === Импорты из fenom-js ===
 import { FenomJs, createAsyncLoader } from 'fenom-js';
 import type { TemplateLoader } from 'fenom-js';
+
+import glob from 'fast-glob';
 
 // === Опции плагина ===
 export interface FenomPluginOptions {
@@ -176,12 +178,69 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Watching .tpl files for HMR');
         },
 
-        buildStart() {
-            if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Build started', { pages });
+        async buildStart() {
+            if (config.command !== 'build') return;
+            if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Build started');
         },
 
         async generateBundle() {
-            if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m HTML generation will be implemented later');
+            if (config.command !== 'build') return;
+
+            if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Generating HTML files...');
+
+            const { default: fastGlob } = await import('fast-glob');
+            templateLoader = createAsyncLoader(root);
+
+            const searchPath = resolve(config.root, pages);
+            const pattern = join(searchPath, '**/*.tpl').replace(/\\/g, '/');
+
+            try {
+                const files = await fastGlob(pattern);
+                if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Found templates:', files);
+
+                for (const file of files) {
+                    const fileName = basename(file, '.tpl');
+                    const outputFileName = fileName === 'index' ? 'index.html' : `${fileName}.html`;
+
+                    try {
+                        const source = await fs.readFile(file, 'utf-8');
+
+                        // JSON-данные
+                        const jsonDataPath = file.replace(/\.tpl$/, '.json');
+                        let extraContext = {};
+                        try {
+                            const data = await fs.readFile(jsonDataPath, 'utf-8');
+                            extraContext = JSON.parse(data);
+                        } catch { }
+
+                        const context = {
+                            title: `${fileName.charAt(0).toUpperCase() + fileName.slice(1)} Page`,
+                            debug: false,
+                            url: '/' + (fileName === 'index' ? '' : fileName),
+                            ...extraContext,
+                        };
+
+                        const html = await FenomJs(source, context, {
+                            loader: templateLoader,
+                            root,
+                            minify: true,
+                        });
+
+                        // ✅ Добавляем файл в бандл через this.emitFile
+                        this.emitFile({
+                            type: 'asset',
+                            fileName: outputFileName,
+                            source: html,
+                        });
+
+                        if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Added to bundle:', outputFileName);
+                    } catch (err) {
+                        console.error('\x1b[31m[Fenom Plugin]\x1b[0m Error rendering:', file);
+                    }
+                }
+            } catch (err) {
+                console.error('\x1b[31m[Fenom Plugin]\x1b[0m glob error:', err);
+            }
         },
     };
 }
