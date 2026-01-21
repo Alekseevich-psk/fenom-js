@@ -1,6 +1,6 @@
 {
     "name": "vite-plugin-fenom",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "type": "module",
     "main": "./vite-plugin-fenom.cjs",
     "exports": {
@@ -10,11 +10,6 @@
         }
     },
     "types": "./vite-plugin-fenom.d.ts",
-    "files": [
-        "vite-plugin-fenom.mjs",
-        "vite-plugin-fenom.cjs",
-        "vite-plugin-fenom.d.ts"
-    ],
     "description": "Simple and fast template engine",
     "keywords": [
         "template",
