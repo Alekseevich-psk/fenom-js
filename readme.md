@@ -83,26 +83,23 @@ npm install vite-plugin-fenom --save-dev
 ## ⚙️ Конфигурация (vite.config.ts или vite.config.js)
 ```ts
 import { defineConfig } from 'vite';
-import { viteFenomPlugin } from 'fenom-js/plugins/vite';
+import fenom from 'vite-plugin-fenom';
 
-export default defineConfig(({ mode }) => {
-  const isBuild = mode === 'production';
-
-  return {
+export default defineConfig({
     plugins: [
-      viteFenomPlugin({
-        root: './src/demo',        // Корень шаблонов
-        dataDir: './src/demo/data', // Папка с JSON-данными (контекст)
-        pagesDir: 'pages',         // Подпапка с основными шаблонами (например, pages/index.tpl)
-        scanAll: true,             // Если true — все include тоже станут отдельными страницами
-        minify: isBuild            // Минификация HTML только при сборке
-      })
+        fenom({
+            pages: 'src/pages/',
+            data: 'src/data/**/*.json',
+            root: 'src/',
+        })
     ],
-    // Опционально: настройка сервера
-    server: {
-      open: '/dist/index.html'
-    }
-  };
+    build: {
+        outDir: 'dist',
+        emptyOutDir: true,
+        rollupOptions: {
+            input: ['src/scripts/main.ts', 'src/styles/style.css'],
+        },
+    },
 });
 ```
 ### 🗂️ Структура проекта (пример)
@@ -121,13 +118,6 @@ src/demo/
 └── layouts/
     └── main.tpl           // Шаблон через {extends 'layouts/main.tpl'}
 ```
-
-### 📦 Что делает scanAll: true?
-При **scanAll**: false — рендерятся только файлы из pagesDir. <br>
-При **scanAll**: true — все .tpl файлы, даже в подпапках и подключаемые через {include}, становятся отдельными HTML-страницами.
-
-Пример:
-**blocks/header.tpl → /blocks/header.html**
 
 ## Статус
 🟡 Бета-версия — API может меняться.
