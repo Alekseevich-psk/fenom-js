@@ -74,7 +74,7 @@ document.body.innerHTML = html;
 ```
 
 ## 🧩 vite-plugin-fenom
-📌 Это отдельный пакет, для работы с **vite** и **vituum**
+📌 Это отдельный пакет, для работы с **vite**
 
 ```bash
 npm install vite-plugin-fenom --save-dev
