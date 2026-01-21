@@ -1,6 +1,6 @@
 {
     "name": "fenom-js",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Simple and fast template engine",
     "author": "@Alekseevich-psk",
     "main": "./index.cjs",
