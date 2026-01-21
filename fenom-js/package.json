@@ -1,0 +1,37 @@
+{
+    "name": "fenom-js",
+    "version": "1.0.1",
+    "description": "Simple and fast template engine",
+    "author": "@Alekseevich-psk",
+    "main": "./index.cjs",
+    "module": "./index.mjs",
+    "types": "./types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./types/index.d.ts",
+            "default": "./index.cjs"
+        }
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Alekseevich-psk/fenom-js.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Alekseevich-psk/fenom-js/issues"
+    },
+    "files": [
+        "index.mjs",
+        "index.cjs",
+        "index.d.ts"
+    ],
+    "keywords": [
+        "template",
+        "engine",
+        "html",
+        "fenom"
+    ],
+    "license": "MIT"
+}

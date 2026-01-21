@@ -9,4 +9,4 @@ export interface UserConfig {
     scanAll?: boolean;
     minify?: boolean;
 }
-export type TemplateLoader = (file: string) => string;
+export type TemplateLoader = (file: string) => Promise<string>;

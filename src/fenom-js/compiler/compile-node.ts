@@ -1,119 +1,237 @@
-import type { ASTNode } from './../types/common';
-import { contextPath, parseValue, transformExpression } from './functions';
+import type { ASTNode } from '../types/common';
+import { parseValue, transformExpression, getFromContext, applyFilters } from './functions';
+import { parseExpression } from '../parser/parse-expression';
+import { evaluate } from '../compiler/evaluate';
 
-export function compileNode(node: ASTNode, lines: string[]): void {
+export function compileNode(
+    node: ASTNode,
+    addLine: (code: string) => void,
+    context: any,
+    filters: any
+): void {
     switch (node.type) {
+        case 'ignore_block':
+            addLine(node.content || '');
+            break;
+
+        case 'comment':
+            // Ничего не делаем — полностью игнорируем
+            break;
+
         case 'text':
-            lines.push(`out += ${JSON.stringify(node.value)};`);
+            addLine(node.value);
             break;
 
-        case 'output':
-            const value = transformExpression(node.name);
-            let result = `(${value})`;
-            node.filters.forEach((filter: string) => {
-                const [name, ...args] = filter.split(':').map(s => s.trim());
-                if (args.length === 0) {
-                    result = `filters.${name}(${result})`;
-                } else {
-                    const argList = args.map(arg => {
-                        if (/^['"].*['"]$/.test(arg)) return arg;
-                        return transformExpression('$' + arg);
-                    }).join(', ');
-                    result = `filters.${name}(${result}, ${argList})`;
+        case 'output': {
+            if (/[+\-*/%<>!=&|?:]/.test(node.name)) {
+                try {
+                    const ast = parseExpression(node.name);
+                    let result = evaluate(ast, context, filters);
+                    result = applyFilters(result, node.filters, context, filters);
+                    addLine(String(result));
+                } catch (e) {
+                    console.warn(`Eval error: ${node.name}`, e);
+                    addLine('');
                 }
-            });
-            lines.push(`out += ${result} ?? '';`);
-            break;
-
-        case 'set':
-            lines.push(`context.${node.variable} = ${parseValue(node.value)};`);
-            break;
-
-        case 'var':
-            lines.push(`if (context.${node.variable} === undefined) context.${node.variable} = ${parseValue(node.value)};`);
-            break;
-
-        case 'add':
-            lines.push(`context.${node.variable} = (context.${node.variable} || 0) + 1;`);
-            break;
-
-        case 'if':
-            lines.push(`if (${contextPath(node.condition)}) {`);
-            node.body.forEach(n => compileNode(n, lines));
-            if (node.elseIfs?.length) {
-                node.elseIfs.forEach((elseIf: any) => {
-                    lines.push(`} else if (${contextPath(elseIf.condition)}) {`);
-                    elseIf.body.forEach((n: any) => compileNode(n, lines));
-                });
-            }
-            if (node.elseBody?.length) {
-                lines.push(`} else {`);
-                node.elseBody.forEach(n => compileNode(n, lines));
-                lines.push(`}`);
-            }
-            lines.push(`}`);
-            break;
-
-        case 'for': {
-            const key = node.key ? `context.${node.key} = ` : '';
-            const item = `context.${node.item}`;
-            const collection = contextPath(node.collection);
-            const indexVar = `i_${node.item}`;
-
-            lines.push(`if (${collection} && Array.isArray(${collection}) && ${collection}.length > 0) {`);
-
-            if (node.reverse) {
-                lines.push(`for (let ${indexVar} = ${collection}.length - 1; ${indexVar} >= 0; ${indexVar}--) {`);
             } else {
-                lines.push(`for (let ${indexVar} = 0; ${indexVar} < ${collection}.length; ${indexVar}++) {`);
-            }
-
-            if (key) lines.push(`${key} ${indexVar};`);
-            lines.push(`${item} = ${collection}[${indexVar}];`);
-
-            node.body.forEach(n => compileNode(n, lines));
-
-            lines.push(`}`);
-            lines.push(`}`);
-
-            if (node.elseBody?.length) {
-                lines.push(`else {`);
-                node.elseBody.forEach(n => compileNode(n, lines));
-                lines.push(`}`);
+                const path = transformExpression(node.name);
+                let result = getFromContext(path, context) ?? '';
+                result = applyFilters(result, node.filters, context, filters);
+                addLine(String(result));
             }
             break;
         }
 
-        case 'switch':
-            lines.push(`switch (${contextPath(node.value)}) {`);
-            node.cases.forEach((c: any) => {
-                lines.push(`case ${c.value}: {`);
-                c.body.forEach((n: any) => compileNode(n, lines));
-                lines.push(`break; }`);
-            });
-            if (node.defaultBody?.length) {
-                lines.push(`default: {`);
-                node.defaultBody.forEach(n => compileNode(n, lines));
-                lines.push(`break; }`);
+        case 'set': {
+            const { variable, value } = node;
+
+            // Выражение с операторами
+            if (/[+\-*/%~]/.test(value)) {
+                try {
+                    const ast = parseExpression(value);
+                    context[variable] = evaluate(ast, context, filters);
+                } catch (e) {
+                    context[variable] = '';
+                }
             }
-            lines.push(`}`);
+            // Простая переменная: $other
+            else if (value.startsWith('$')) {
+                const path = value.slice(1);
+                context[variable] = getFromContext(path, context) ?? '';
+            }
+            // Простое значение
+            else {
+                context[variable] = parseValue(value);
+            }
             break;
+        }
+
+        case 'var':
+            if (context[node.variable] === undefined) {
+                context[node.variable] = parseValue(node.value);
+            }
+            break;
+
+        case 'add':
+            context[node.variable] = (context[node.variable] || 0) + 1;
+            break;
+
+        case 'if': {
+            let cond = false;
+            try {
+                const ast = parseExpression(node.condition);
+                cond = !!evaluate(ast, context, filters);
+            } catch (e) {
+                console.warn(`Condition error: ${node.condition}`, e);
+                cond = false;
+            }
+
+            if (cond) {
+                for (const child of node.body) {
+                    compileNode(child, addLine, context, filters);
+                }
+            } else if (node.elseIfs?.length) {
+                let executed = false;
+                for (const elseIf of node.elseIfs) {
+                    let elseIfCond = false;
+                    try {
+                        const ast = parseExpression(elseIf.condition);
+                        elseIfCond = !!evaluate(ast, context, filters);
+                    } catch (e) {
+                        console.warn(`Condition error: ${elseIf.condition}`, e);
+                        elseIfCond = false;
+                    }
+
+                    if (elseIfCond) {
+                        for (const child of elseIf.body) {
+                            compileNode(child, addLine, context, filters);
+                        }
+                        executed = true;
+                        break;
+                    }
+                }
+                if (!executed && node.elseBody?.length) {
+                    for (const child of node.elseBody) {
+                        compileNode(child, addLine, context, filters);
+                    }
+                }
+            } else if (node.elseBody?.length) {
+                for (const child of node.elseBody) {
+                    compileNode(child, addLine, context, filters);
+                }
+            }
+            break;
+        }
+
+
+
+        case 'for': {
+            const collection = getFromContext(node.collection.slice(1), context);
+            if (Array.isArray(collection) && collection.length > 0) {
+                const reverse = node.reverse ?? false;
+                const indices = reverse ? [...collection].reverse().keys() : collection.keys();
+                for (const i of indices) {
+                    const itemValue = collection[i];
+                    context[node.item] = itemValue;
+                    if (node.key) context[node.key] = i;
+                    for (const child of node.body) {
+                        compileNode(child, addLine, context, filters);
+                    }
+                }
+            } else if (node.elseBody?.length) {
+                for (const child of node.elseBody) {
+                    compileNode(child, addLine, context, filters);
+                }
+            }
+            break;
+        }
+
+        case 'switch': {
+            const value = context[node.value.slice(1)];
+            let matched = false;
+            for (const c of node.cases) {
+                if (c.value === value) {
+                    for (const child of c.body) {
+                        compileNode(child, addLine, context, filters);
+                    }
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched && node.defaultBody?.length) {
+                for (const child of node.defaultBody) {
+                    compileNode(child, addLine, context, filters);
+                }
+            }
+            break;
+        }
+
+        case 'operator': {
+            const { variable, operator, value } = node;
+            const rawValue = getFromContext(variable, context);
+            const currentValue = typeof rawValue === 'number' ? rawValue : +rawValue || 0;
+
+            let numericValue: number;
+            if (/^[\d.]+$/.test(value)) {
+                numericValue = parseFloat(value);
+            } else {
+                const val = getFromContext(value, context);
+                numericValue = typeof val === 'number' ? val : +val || 0;
+            }
+
+            let result: number;
+
+            switch (operator) {
+                case '++':
+                    result = currentValue;
+                    context[variable] = currentValue + 1;
+                    break;
+                case '--':
+                    result = currentValue;
+                    context[variable] = currentValue - 1;
+                    break;
+                case '+=':
+                    result = currentValue;
+                    context[variable] = currentValue + numericValue;
+                    break;
+                case '-=':
+                    result = currentValue;
+                    context[variable] = currentValue - numericValue;
+                    break;
+                case '*=':
+                    result = currentValue;
+                    context[variable] = currentValue * numericValue;
+                    break;
+                case '/=':
+                    result = currentValue;
+                    context[variable] = currentValue / numericValue;
+                    break;
+                case '%=':
+                    result = currentValue;
+                    context[variable] = currentValue % numericValue;
+                    break;
+                default:
+                    console.warn(`Unknown operator: ${operator}`);
+                    result = 0;
+            }
+
+            addLine(String(result));
+            break;
+        }
+
+        case 'block': {
+            // Только вставка: {block "main"}
+            // Определения обрабатываются в compile
+            addLine(`{block "${node.name}"}`);
+            break;
+        }
 
         case 'extends':
-            break;
-
-        case 'block':
-            if (node.body && node.body.length > 0) {
-                // Это определение — не рендерим
-                return;
-            }
-            // Это вставка: {block "main"}
-            lines.push(`out += await context.block('${node.name}');`);
+        case 'include':
+            // Обрабатываются в compile
             break;
 
         default:
-            if (node.type !== 'extends' && node.type !== 'block') {
-                console.warn(`Unknown node type: ${node.type}`);
-            }
+            console.warn(`Unknown node type: ${node.type}`);
     }
 }

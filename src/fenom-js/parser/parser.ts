@@ -72,7 +72,7 @@ export function parse(tokens: Token[]): ASTNode[] {
         if (token.type === 'if') {
             const { node, nextIndex } = parseIf(tokens, i);
             ast.push(node);
-            i = nextIndex;
+            i = nextIndex;  // ← сначала обновляем
             continue;
         }
 
@@ -110,6 +110,11 @@ export function parse(tokens: Token[]): ASTNode[] {
                 filters
             });
 
+            i++;
+            continue;
+        }
+
+        if (['elseif', 'else', 'endif', 'endfor', 'endforeach', 'endswitch'].includes(token.type)) {
             i++;
             continue;
         }

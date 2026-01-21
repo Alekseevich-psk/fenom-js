@@ -10,12 +10,11 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-FenomJS
 dist
 dist-ssr
 *.local
 
-fenom-js
+
 vite-plugin-fenom
 
 # Editor directories and files

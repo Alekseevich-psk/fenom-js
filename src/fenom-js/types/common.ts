@@ -11,4 +11,4 @@ export interface UserConfig {
     minify?: boolean;
 }
 
-export type TemplateLoader = (file: string) => string;
+export type TemplateLoader = (file: string) => Promise<string>;

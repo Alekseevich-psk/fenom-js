@@ -1,13 +1,19 @@
 {
     "name": "fenom",
     "version": "1.0.0",
-    "main": "./index.cjs",
-    "module": "./index.mjs",
-    "types": "./index.d.ts",
+    "type": "module",
+    "main": "./vite-plugin-fenom.cjs",
+    "exports": {
+        ".": {
+            "import": "./vite-plugin-fenom.mjs",
+            "require": "./vite-plugin-fenom.cjs"
+        }
+    },
+    "types": "./vite-plugin-fenom.d.ts",
     "files": [
-        "index.mjs",
-        "index.cjs",
-        "index.d.ts"
+        "vite-plugin-fenom.mjs",
+        "vite-plugin-fenom.cjs",
+        "vite-plugin-fenom.d.ts"
     ],
     "description": "Simple and fast template engine",
     "keywords": [

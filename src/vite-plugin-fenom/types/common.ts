@@ -1,28 +1,28 @@
-export interface UserConfig {
-    root?: string;                  // корень проекта
-    dataDir?: string;               // где лежат JSON
-    pagesDir?: string;              // папка с "страницами" → по умолчанию "pages"
-    scanAll?: boolean;              // true → все .tpl → .html, false → только из pagesDir
-    minify?: boolean;               // минифицировать ли HTML
-    assetInputs?: string[];         // например: ['src/styles/**/*.{css,scss}', 'src/scripts/**/*.ts']
-    useRelativePaths?: boolean;     // true → /pages/about.html, false → /about.html
-    entryNaming?: {
-        js?: string;
-        css?: string;
-        asset?: string;
-    };
+// types.ts
+import type { Plugin } from 'vite';
+
+export interface PluginUserConfig {
+    reload?: boolean;
+    root?: string;
+    filters?: Record<string, Function>;
+    globals?: Record<string, any>;
+    data?: string | string[];
+    formats?: string[];
+    ignoredPaths?: string[];
+    options?: Record<string, any>;
 }
 
-export type TemplateLoader = (file: string) => string;
-
-export interface ScanOptions {
+export type PluginConfig = PluginUserConfig & {
     root: string;
-    pagesDir: string;
-    scanAll?: boolean;
-    assetInputs?: string[]; // например: ['src/styles/**/*.{css,scss}', 'src/scripts/**/*.ts']
-}
+    data: string[];
+    formats: string[];
+    ignoredPaths: string[];
+};
 
-export interface ScannedAssets {
-    htmlEntries: string[];     // .tpl файлы
-    assetFiles: string[];      // найденные ассеты (js, css)
+export interface TransformContext {
+    path: string;
+    filename: string;
+    server: any;
+    config: PluginConfig;
+    resolvedConfig: any;
 }

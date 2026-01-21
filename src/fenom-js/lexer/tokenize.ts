@@ -12,10 +12,10 @@ const ALL_PATTERNS: TokenPattern[] = [
     ...Patterns.IGNORE_PATTERN,
     ...Patterns.SET_PATTERNS,
     ...Patterns.MISC_PATTERNS,
-    ...Patterns.OUTPUT_PATTERN,
     ...Patterns.CYCLE_PATTERNS,
     ...Patterns.FILTER_PATTERNS,
     ...Patterns.MACRO_PATTERNS,
+    ...Patterns.OUTPUT_PATTERN,
 ];
 
 export function tokenize(input: string): Token[] {
@@ -30,44 +30,51 @@ export function tokenize(input: string): Token[] {
             let i = pos + 8; // длина '{ignore}'
 
             while (i < input.length) {
-                if (input.slice(i).startsWith('{ignore}')) {
+                if (input.length - i >= 8 && input.startsWith('{ignore}', i)) {
                     depth++;
                     i += 8;
-                } else if (input.slice(i).startsWith('{/ignore}')) {
+                    continue;
+                }
+
+                if (input.length - i >= 9 && input.startsWith('{/ignore}', i)) {
                     depth--;
                     i += 9;
+
                     if (depth === 0) {
-                        // Нашли конец
-                        const content = input.slice(pos + 8, i - 9); // только содержимое
+                        const content = input.slice(pos + 8, i - 9);
                         tokens.push({ type: 'text', value: content });
-                        pos = i; // ставим после {/ignore}
+                        pos = i;
                         matched = true;
                         break;
                     }
-                } else {
-                    i++;
+
+                    continue;
                 }
+
+                i++;
             }
 
-            // Если не нашли закрывающий тег
             if (!matched) {
                 tokens.push({ type: 'text', value: '{ignore}' });
                 pos += 8;
             }
+
             continue;
         }
 
         if (input[pos] !== '{') {
-            const next = input.indexOf('{', pos);
-            if (next === -1) {
+            const nextBrace = input.indexOf('{', pos);
+
+            if (nextBrace === -1) {
                 tokens.push({ type: 'text', value: input.slice(pos) });
                 break;
-            } else {
-                if (next > pos) {
-                    tokens.push({ type: 'text', value: input.slice(pos, next) });
-                }
-                pos = next;
             }
+
+            if (nextBrace > pos) {
+                tokens.push({ type: 'text', value: input.slice(pos, nextBrace) });
+            }
+
+            pos = nextBrace;
         }
 
         for (const pattern of ALL_PATTERNS) {
@@ -81,7 +88,6 @@ export function tokenize(input: string): Token[] {
                 };
 
                 if (pattern.type === 'comment') {
-                    // Пропускаем: не добавляем в tokens
                     pos += match[0].length;
                     matched = true;
                     break;

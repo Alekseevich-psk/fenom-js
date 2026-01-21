@@ -149,10 +149,8 @@ export const filters = {
     /**
      * Переворачивает массив или строку
      */
-    reverse: warnFilter('reverse', 'array', (arr: any) => {
-        if (Array.isArray(arr)) return [...arr].reverse();
-        if (typeof arr === 'string') return arr.split('').reverse().join('');
-        return arr;
+    reverse: warnFilter('reverse', 'array', (arr: any[]) => {
+        return Array.isArray(arr) ? [...arr].reverse() : arr;
     }),
 
     /**
@@ -236,7 +234,9 @@ export const filters = {
     /**
      * Возвращает ключи массива/объекта
      */
-    keys: (obj: any) => (obj && typeof obj === 'object' ? Object.keys(obj) : []),
+    keys: (obj: Record<string, any>) => {
+        return obj && typeof obj === 'object' ? Object.keys(obj) : [];
+    },
 
     /**
      * Возвращает значения массива/объекта

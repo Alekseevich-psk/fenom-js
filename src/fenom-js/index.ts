@@ -1,37 +1,12 @@
-import type { TemplateLoader } from './types/common';
+// src/index.ts
+import { FenomJs } from './engine/renderer';
+import { createAsyncLoader } from './engine/loader';
 
-import { parse } from './parser/parser';
-import { compile } from './compiler/compiler';
-import { tokenize } from './lexer/tokenize';
-import { filters } from './filters/filters';
-import { minifyHTML } from './compiler/functions';
+// Основной API
+export { FenomJs, createAsyncLoader };
+export type { TemplateLoader } from './types/common';
 
-export function FenomJs(
-    template: string,
-    context?: Record<string, any>,
-    options?: {
-        root?: string;
-        loader?: TemplateLoader;
-        minify?: boolean;
-    }
-): string {
-    const { root, loader, minify } = options || {
-        root: './src/'
-    };
-
-    const defaultLoader = loader || (() => '');
-    
-    try {
-        const tokens = tokenize(template);
-        const ast = parse(tokens);
-        const compiled = compile(ast, defaultLoader);
-        const html = compiled(context, filters);
-        
-        return minify
-            ? minifyHTML(html)
-            : html;
-    } catch (err) {
-        console.error('Template error:', err);
-        return `<span style='color:red'>[Ошибка шаблона: ${(err as Error).message}]</span>`;
-    }
-}
+// Advanced API — для плагинов, тестов, инструментов
+export { tokenize } from './lexer/tokenize';
+export { parse } from './parser/parser';
+export { compile } from './compiler/compiler';

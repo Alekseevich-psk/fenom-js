@@ -5,8 +5,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fenom-js</title>
-    <link rel="stylesheet" href="/styles/style.css" />
+    <title>{block "title"}Заголовок по умолчанию{/block}</title>
+    <link rel="stylesheet" href="/src/demo/styles/style.css" />
     <link rel="icon" href="/svg/ico-favicon.svg" type="image/svg+xml">
 </head>
 
@@ -18,8 +18,7 @@
         </div>
     </main>
 
-    <script type="module" src="/scripts/main.ts"></script>
-    <script type="module" src="/scripts/test.ts"></script>
+    <script type="module" src="/src/demo/scripts/main.ts"></script>
 </body>
 
 </html>

@@ -1,10 +1,19 @@
 {extends 'file:layouts/base.tpl'}
+{block "title"}Расширенная демонстрация Fenom!{/block}
 
 {block "main"}
 
-{block "title"}Расширенная демонстрация Fenom{/block}
+    <h1>🚀 Расширенная демонстрация возможностей Fenom</h1>
 
-<h1>🚀 Расширенная демонстрация возможностей Fenom</h1>
+{ignore}
+{set $name = "Анна"}
+{set $age = 28}
+{set $is_premium = true}
+{set $price = 1350}
+{set $discount = 0.15}
+{set $count = 5}
+{set $items = ['яблоко', 'банан', 'апельсин']}
+{/ignore}
 
 {* 1. Установка переменных *}
 {set $name = "Анна"}
@@ -19,30 +28,47 @@
 <section>
     <h2>🧮 Математические выражения</h2>
     <ul>
+
+        {set $test = $name ~ $name}
+        {$test}
+
+        {set $count = 5}
         <li>Удвоение: {$count * 2}</li>
         {ignore}
         {$count * 2}
         {/ignore}
+
+        {set $count = 5}
         <li>Остаток от деления: {$count % 2}</li>
         {ignore}
         {$count % 2}
         {/ignore}
+
+        {set $count = 5}
         <li>Инкремент: {$count++} ~ {$count}</li>
         {ignore}
         {$count++} ~ {$count}
         {/ignore}
+
+        {set $count = 5}
         <li>Декремент: {$count--} ~ {$count}</li>
         {ignore}
         {$count--} ~ {$count}
         {/ignore}
+
+        {set $count = 5}
         <li>Присваивание: {$count += 10}</li>
         {ignore}
         {$count += 10}
         {/ignore}
+
+        {set $count = 5}
         <li>Сложение: {set $count = $count + $count} {$count}</li>
         {ignore}
         {set $count = $count + $count} {$count}
         {/ignore}
+
+        {set $count = 5}
         <li>Вычитание: {set $count = $count - $count} {$count}</li>
         {ignore}
         {set $count = $count - $count} {$count}
@@ -56,23 +82,16 @@
     <p>Статус: {$is_premium ? 'Премиум' : 'Обычный'}</p>
     <p>Возраст: {$age >= 18 ? 'Совершеннолетний' : 'Не достиг возраста'}</p>
 
-    {if $price > 1000 && $is_premium || $age < 30}
-        <p>🎉 Условие выполнено: дорогой, премиум, молодой</p>
 
-        {switch $settings.theme}
-        {case "dark"}
-        <p>🌑 Тёмная тема</p>
-        {case "light"}
-        <p>☀️ Светлая тема</p>
-        {default}
-        <p>🌈 Неизвестная тема</p>
-        {/switch}
 
-        {elseif $price < 500}
-            <p>💸 Дешево</p>
-            {else}
-            <p>🔧 Средняя цена</p>
-            {/if}
+    {set $price = 300}
+    {if $price > 1000}
+    <p>🎉 Условие выполнено</p>
+    {elseif $price < 500}
+        <p>💸 Дешево</p>
+        {else}
+        <p>🔧 Средняя цена</p>
+        {/if}
 </section>
 
 {* 4. Циклы и итерации *}
@@ -107,7 +126,7 @@
         <li><strong>Обратный порядок:</strong> {$arrForTest2|reverse}</li>
         <li><strong>Уникальные:</strong> {$arrForTest|unique|join:', '}</li>
 
-        {* <li><strong>Срез:</strong> {$arrForTest2|slice:0:2}</li> не работает! *}
+        <li><strong>Срез:</strong> {$arrForTest2|slice:0:2}</li>
 
         <li><strong>Перемешать:</strong> {$arrForTest|shuffle|join:', '} (каждый раз по-новому)</li>
 
@@ -127,5 +146,5 @@
 {* 6. Include *}
 {include 'file:chunks/header.tpl' titleTest="Тестовый заголовок - Header" desc="Include"}
 
-<a href="/about.html">about.html</a>
+<a href="/about">about.html</a>
 {/block}

@@ -1,23 +1,20 @@
-import viteFenomPlugin from './src/vite-plugin-fenom/vite-plugin-fenom';
 import { defineConfig } from 'vite';
+import fenom from 'vite-plugin-fenom';
 
-export default defineConfig(({ command }) => {
-    const isBuild = command === 'build';
-
-    return {
-        plugins: [
-            viteFenomPlugin({
-                root: './src/demo',
-                dataDir: './src/demo/data',
-                pagesDir: 'pages',
-                scanAll: true,
-                minify: isBuild,
-                useRelativePaths: true,
-                entryNaming: {
-                    js: '[name].[hash].js',
-                    css: '[name].[hash].css'
-                }
-            })
-        ]
-    };
+export default defineConfig({
+    plugins: [
+        fenom({
+            pages: 'src/demo/pages',
+            data: 'src/demo/data/**/*.json',
+            root: 'src/demo',
+            // debug: true
+        })
+    ],
+    build: {
+        outDir: 'dist',
+        emptyOutDir: true,
+        rollupOptions: {
+            input: ['src/demo/scripts/main.ts', 'src/demo/styles/style.css'],
+        },
+    },
 });
