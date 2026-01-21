@@ -10,6 +10,7 @@ export interface FenomPluginOptions {
     pages?: string;
     data?: string;
     root?: string;
+    minifyHtml?: boolean,
     debug?: boolean;
 }
 
@@ -21,6 +22,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
         pages = 'src/pages',
         data = 'src/data/**/*.json',
         root = 'src',
+        minifyHtml = true,
         debug = false,
     } = options;
 
@@ -34,7 +36,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
 
         configResolved(resolvedConfig) {
             config = resolvedConfig;
-            
+
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Config resolved', {
                 mode: config.mode,
                 command: config.command,
@@ -79,6 +81,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
 
                 // Определяем имя страницы
                 let pageName = 'index';
+
                 if (url !== '/') {
                     pageName = url.split('?')[0].split('#')[0].replace(/^\/|\/$/g, '');
                 }
@@ -101,7 +104,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     let html = await FenomJs(source, context, {
                         loader: templateLoader,
                         root,
-                        minify: config.mode === 'production',
+                        minify: minifyHtml,
                     });
 
                     if (config.mode === 'development') {
@@ -246,7 +249,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                         let html = await FenomJs(source, context, {
                             loader: templateLoader,
                             root,
-                            minify: true,
+                            minify: minifyHtml,
                         });
 
                         // === Замена путей ===
