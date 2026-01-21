@@ -5,39 +5,16 @@ import * as fs from 'fs/promises';
 import { FenomJs, createAsyncLoader } from 'fenom-js';
 import type { TemplateLoader } from 'fenom-js';
 
-import glob from 'fast-glob';
-
 // === Опции плагина ===
 export interface FenomPluginOptions {
-    /**
-     * Папка с шаблонами страниц
-     * @default 'src/pages'
-     */
     pages?: string;
-
     data?: string;
-
-    /**
-     * Корневая директория проекта
-     * @default 'src'
-     */
     root?: string;
-
-    /**
-     * Режим отладки
-     * @default false
-     */
     debug?: boolean;
 }
 
 /**
- * Vite-плагин для рендеринга .tpl шаблонов через fenom-js.
- *
- * Особенности:
- * - Поддержка /about → about.tpl
- * - Автозагрузка через createAsyncLoader
- * - Надёжный HMR: перезагрузка при изменении .tpl
- * - Работает независимо от import.meta.hot
+ * Vite-плагин для рендеринга .tpl шаблонов через fenom-js
  */
 export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
     const {
@@ -49,7 +26,6 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
 
     let config: ResolvedConfig;
     let templateLoader: TemplateLoader;
-    let port = 5173; // будет обновлён в configureServer
 
     if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Plugin initialized', { pages, data, root });
 
@@ -58,12 +34,11 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
 
         configResolved(resolvedConfig) {
             config = resolvedConfig;
-            port = resolvedConfig.server.port || 5173;
+            
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Config resolved', {
                 mode: config.mode,
                 command: config.command,
                 root: config.root,
-                port,
             });
         },
 
@@ -161,10 +136,10 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     res.statusCode = 500;
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     res.end(`
-            <h1>🔧 Ошибка рендеринга</h1>
-            <p><strong>${err.message}</strong></p>
-            <pre>${err.stack}</pre>
-          `);
+                        <h1>🔧 Ошибка рендеринга</h1>
+                        <p><strong>${err.message}</strong></p>
+                        <pre>${err.stack}</pre>
+                    `);
                 }
             };
 
@@ -183,7 +158,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Build started');
         },
 
-        async generateBundle() {
+        async generateBundle(_options, bundle) {
             if (config.command !== 'build') return;
 
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Generating HTML files...');
@@ -198,6 +173,55 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                 const files = await fastGlob(pattern);
                 if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Found templates:', files);
 
+                // === Собираем входы ===
+                const inputEntries = config.build.rollupOptions.input;
+                let inputFiles: string[] = [];
+
+                if (Array.isArray(inputEntries)) {
+                    inputFiles = inputEntries;
+                } else if (typeof inputEntries === 'object' && inputEntries !== null) {
+                    inputFiles = Object.values(inputEntries);
+                } else if (typeof inputEntries === 'string') {
+                    inputFiles = [inputEntries];
+                }
+
+                if (debug) {
+                    console.log('inputFiles:', inputFiles);
+                }
+
+                // === Находим настоящие ассеты по расширению ===
+                let jsChunk = '';
+                const cssAssets: string[] = [];
+
+                for (const [fileName, file] of Object.entries(bundle)) {
+                    if (file.type === 'chunk' && /\.(js|ts)$/.test(fileName)) {
+                        jsChunk = `/${fileName}`;
+                    }
+                    if (file.type === 'asset' && fileName.endsWith('.css')) {
+                        cssAssets.push(`/${fileName}`);
+                    }
+                }
+
+                // === Создаём карту замен ===
+                const replacementMap = new Map<string, string>();
+
+                for (const input of inputFiles) {
+                    if (/\.(ts|js)$/.test(input) && jsChunk) {
+                        replacementMap.set(input, jsChunk);
+                    }
+                    if (/\.css$/.test(input) && cssAssets.length > 0) {
+                        // Берём первый CSS (или можно выбрать по имени)
+                        replacementMap.set(input, cssAssets[0]);
+                    }
+                }
+
+                if (debug) {
+                    console.log('JS chunk found:', jsChunk);
+                    console.log('CSS assets found:', cssAssets);
+                    console.log('replacementMap:', Object.fromEntries(replacementMap));
+                }
+
+                // === Генерируем HTML ===
                 for (const file of files) {
                     const fileName = basename(file, '.tpl');
                     const outputFileName = fileName === 'index' ? 'index.html' : `${fileName}.html`;
@@ -205,7 +229,6 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     try {
                         const source = await fs.readFile(file, 'utf-8');
 
-                        // JSON-данные
                         const jsonDataPath = file.replace(/\.tpl$/, '.json');
                         let extraContext = {};
                         try {
@@ -220,20 +243,57 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                             ...extraContext,
                         };
 
-                        const html = await FenomJs(source, context, {
+                        let html = await FenomJs(source, context, {
                             loader: templateLoader,
                             root,
                             minify: true,
                         });
 
-                        // ✅ Добавляем файл в бандл через this.emitFile
+                        // === Замена путей ===
+                        for (const [devPath, prodPath] of replacementMap) {
+                            const fullDevPath = '/' + devPath;
+                            const escaped = fullDevPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                            // <script src="...">
+                            const scriptRegex = new RegExp(
+                                `<script[^>]+src=["']${escaped}["'][^>]*>`,
+                                'gi'
+                            );
+                            if (scriptRegex.test(html)) {
+                                html = html.replace(
+                                    scriptRegex,
+                                    `<script type="module" src="${prodPath}"></script>`
+                                );
+                                if (debug) {
+                                    console.log(`[Fenom Plugin] Replaced script: ${fullDevPath} → ${prodPath}`);
+                                }
+                            }
+
+                            // <link href="...">
+                            const linkRegex = new RegExp(
+                                `<link[^>]+href=["']${escaped}["'][^>]*>`,
+                                'gi'
+                            );
+
+                            if (linkRegex.test(html)) {
+                                html = html.replace(
+                                    linkRegex,
+                                    `<link rel="stylesheet" href="${prodPath}">`
+                                );
+
+                                if (debug) {
+                                    console.log(`[Fenom Plugin] Replaced link: ${fullDevPath} → ${prodPath}`);
+                                }
+                            }
+                        }
+
                         this.emitFile({
                             type: 'asset',
                             fileName: outputFileName,
                             source: html,
                         });
 
-                        if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Added to bundle:', outputFileName);
+                        if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Generated:', outputFileName);
                     } catch (err) {
                         console.error('\x1b[31m[Fenom Plugin]\x1b[0m Error rendering:', file);
                     }
