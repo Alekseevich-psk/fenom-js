@@ -1,6 +1,6 @@
 {
-    "name": "fenom",
-    "version": "1.0.0",
+    "name": "vite-plugin-fenom",
+    "version": "1.0.1",
     "type": "module",
     "main": "./vite-plugin-fenom.cjs",
     "exports": {
