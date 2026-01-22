@@ -1,4 +1,3 @@
-
 import { FenomJs, createAsyncLoader } from 'fenom-js';
 import { resolve } from 'path';
 import { readFile, writeFile } from 'fs/promises';

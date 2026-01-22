@@ -28,13 +28,63 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
 
     let config: ResolvedConfig;
     let templateLoader: TemplateLoader;
+    let globalData: Record<string, any> = {}; // ← храним глобальные данные
 
-    if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Plugin initialized', { pages, data, root });
+    // === Функция загрузки глобальных JSON-данных ===
+    async function loadGlobalData(rootDir: string) {
+        const { default: fastGlob } = await import('fast-glob');
+
+        const dataGlob = data;
+        let baseDir = dataGlob;
+
+        if (baseDir.includes('**')) {
+            baseDir = baseDir.substring(0, baseDir.indexOf('**')).replace(/[/\\]+$/, '');
+        }
+
+        const fullPath = resolve(rootDir, baseDir);
+        const globPattern = dataGlob.replace(baseDir, '').replace(/^\//, ''); // → **/*.json
+
+        console.log('[Fenom Plugin] Base dir:', fullPath);
+        console.log('[Fenom Plugin] Glob pattern:', globPattern);
+
+        try {
+            await fs.access(fullPath);
+        } catch {
+            console.warn(`[Fenom Plugin] Data directory not found: ${fullPath}`);
+            return {};
+        }
+
+        const files = await fastGlob(globPattern, {
+            cwd: fullPath,
+            absolute: true,
+            onlyFiles: true,
+            dot: true,
+        });
+
+        console.log('Found JSON files:', files);
+
+        const jsonData: Record<string, any> = {};
+
+        for (const file of files) {
+            try {
+                const content = await fs.readFile(file, 'utf-8');
+                const parsed = JSON.parse(content);
+                const fileName = basename(file, '.json');
+                jsonData[fileName] = parsed;
+            } catch (err) {
+                console.warn(`[Fenom Plugin] Failed to load: ${file}`, err);
+            }
+        }
+
+        if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Loaded data keys:', Object.keys(jsonData));
+        return jsonData;
+    }
+
 
     return {
         name: 'vite-plugin-fenom',
 
-        configResolved(resolvedConfig) {
+        async configResolved(resolvedConfig) {
             config = resolvedConfig;
 
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Config resolved', {
@@ -42,16 +92,21 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                 command: config.command,
                 root: config.root,
             });
+
+            // === Загружаем глобальные данные при старте ===
+            try {
+                globalData = await loadGlobalData(config.root);
+            } catch (err) {
+                console.error('\x1b[31m[Fenom Plugin]\x1b[0m Failed to load global data:', err);
+            }
         },
 
         configureServer(server) {
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Dev server setup started...');
 
-            // Создаём загрузчик шаблонов
             templateLoader = createAsyncLoader(root);
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Template loader created for root:', root);
 
-            // Наблюдаем за .tpl файлами
             server.watcher.on('change', (filePath) => {
                 if (filePath.endsWith('.tpl')) {
                     if (debug) console.log('[Fenom Plugin] 🔄 Full reload triggered:', filePath);
@@ -59,13 +114,25 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                 }
             });
 
-            // Обработчик запросов
+            // === Перезагрузка данных при изменении JSON ===
+            server.watcher.add(resolve(config.root, data));
+            server.watcher.on('change', async (filePath) => {
+                if (filePath.endsWith('.json')) {
+                    try {
+                        const reloaded = await loadGlobalData(config.root);
+                        globalData = reloaded;
+                        if (debug) console.log('\x1b[33m[Fenom Plugin]\x1b[0m Global data reloaded:', Object.keys(globalData));
+                    } catch (err) {
+                        console.warn('[Fenom Plugin] Failed to reload JSON data');
+                    }
+                }
+            });
+
             const handlePageRequest = async (req: any, res: any, next: () => void) => {
                 const url = req.url;
 
                 if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Incoming request:', url);
 
-                // Пропускаем статику, API, системные пути
                 if (
                     !url ||
                     url.startsWith('/assets/') ||
@@ -79,9 +146,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     return next();
                 }
 
-                // Определяем имя страницы
                 let pageName = 'index';
-
                 if (url !== '/') {
                     pageName = url.split('?')[0].split('#')[0].replace(/^\/|\/$/g, '');
                 }
@@ -90,17 +155,16 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                 const relativePath = relative(root, templatePath);
 
                 try {
-                    if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Rendering page:', { pageName, templatePath });
-
                     const source = await templateLoader(relativePath);
 
+                    // === Формируем контекст: глобальные данные + мета ===
                     const context = {
                         title: `${pageName.charAt(0).toUpperCase() + pageName.slice(1)} Page`,
                         debug,
                         url,
+                        ...globalData, // ← все JSON-файлы в context
                     };
 
-                    // Рендерим через FenomJs
                     let html = await FenomJs(source, context, {
                         loader: templateLoader,
                         root,
@@ -122,7 +186,6 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                         }
                     }
 
-                    // Отправляем ответ
                     res.statusCode = 200;
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     res.end(html);
@@ -134,8 +197,6 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     }
 
                     console.error('\x1b[36m[Fenom Plugin]\x1b[0m Rendering error:', err.message);
-                    console.error(err);
-
                     res.statusCode = 500;
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     res.end(`
@@ -146,19 +207,20 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                 }
             };
 
-            // Вставляем middleware в начало стека
-            server.middlewares.stack.unshift({
-                route: '',
-                handle: handlePageRequest,
-            });
-
+            server.middlewares.stack.unshift({ route: '', handle: handlePageRequest });
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Middleware inserted at top of stack');
-            if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Watching .tpl files for HMR');
         },
 
         async buildStart() {
             if (config.command !== 'build') return;
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Build started');
+
+            // === Загружаем данные перед сборкой ===
+            try {
+                globalData = await loadGlobalData(config.root);
+            } catch (err) {
+                console.error('\x1b[31m[Fenom Plugin]\x1b[0m Failed to load data on build start:', err);
+            }
         },
 
         async generateBundle(_options, bundle) {
@@ -176,7 +238,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                 const files = await fastGlob(pattern);
                 if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Found templates:', files);
 
-                // === Собираем входы ===
+                // === Анализ входов и ассетов — как было ===
                 const inputEntries = config.build.rollupOptions.input;
                 let inputFiles: string[] = [];
 
@@ -188,11 +250,6 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     inputFiles = [inputEntries];
                 }
 
-                if (debug) {
-                    console.log('inputFiles:', inputFiles);
-                }
-
-                // === Находим настоящие ассеты по расширению ===
                 let jsChunk = '';
                 const cssAssets: string[] = [];
 
@@ -205,26 +262,17 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     }
                 }
 
-                // === Создаём карту замен ===
                 const replacementMap = new Map<string, string>();
-
                 for (const input of inputFiles) {
                     if (/\.(ts|js)$/.test(input) && jsChunk) {
                         replacementMap.set(input, jsChunk);
                     }
                     if (/\.css$/.test(input) && cssAssets.length > 0) {
-                        // Берём первый CSS (или можно выбрать по имени)
                         replacementMap.set(input, cssAssets[0]);
                     }
                 }
 
-                if (debug) {
-                    console.log('JS chunk found:', jsChunk);
-                    console.log('CSS assets found:', cssAssets);
-                    console.log('replacementMap:', Object.fromEntries(replacementMap));
-                }
-
-                // === Генерируем HTML ===
+                // === Генерация HTML ===
                 for (const file of files) {
                     const fileName = basename(file, '.tpl');
                     const outputFileName = fileName === 'index' ? 'index.html' : `${fileName}.html`;
@@ -232,18 +280,11 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     try {
                         const source = await fs.readFile(file, 'utf-8');
 
-                        const jsonDataPath = file.replace(/\.tpl$/, '.json');
-                        let extraContext = {};
-                        try {
-                            const data = await fs.readFile(jsonDataPath, 'utf-8');
-                            extraContext = JSON.parse(data);
-                        } catch { }
-
                         const context = {
                             title: `${fileName.charAt(0).toUpperCase() + fileName.slice(1)} Page`,
                             debug: false,
                             url: '/' + (fileName === 'index' ? '' : fileName),
-                            ...extraContext,
+                            ...globalData, // ← все данные из data/**/*.json
                         };
 
                         let html = await FenomJs(source, context, {
@@ -252,41 +293,18 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                             minify: minifyHtml,
                         });
 
-                        // === Замена путей ===
                         for (const [devPath, prodPath] of replacementMap) {
                             const fullDevPath = '/' + devPath;
                             const escaped = fullDevPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-                            // <script src="...">
-                            const scriptRegex = new RegExp(
-                                `<script[^>]+src=["']${escaped}["'][^>]*>`,
-                                'gi'
-                            );
+                            const scriptRegex = new RegExp(`<script[^>]+src=["']${escaped}["'][^>]*>`, 'gi');
                             if (scriptRegex.test(html)) {
-                                html = html.replace(
-                                    scriptRegex,
-                                    `<script type="module" src="${prodPath}"></script>`
-                                );
-                                if (debug) {
-                                    console.log(`[Fenom Plugin] Replaced script: ${fullDevPath} → ${prodPath}`);
-                                }
+                                html = html.replace(scriptRegex, `<script type="module" src="${prodPath}"></script>`);
                             }
 
-                            // <link href="...">
-                            const linkRegex = new RegExp(
-                                `<link[^>]+href=["']${escaped}["'][^>]*>`,
-                                'gi'
-                            );
-
+                            const linkRegex = new RegExp(`<link[^>]+href=["']${escaped}["'][^>]*>`, 'gi');
                             if (linkRegex.test(html)) {
-                                html = html.replace(
-                                    linkRegex,
-                                    `<link rel="stylesheet" href="${prodPath}">`
-                                );
-
-                                if (debug) {
-                                    console.log(`[Fenom Plugin] Replaced link: ${fullDevPath} → ${prodPath}`);
-                                }
+                                html = html.replace(linkRegex, `<link rel="stylesheet" href="${prodPath}">`);
                             }
                         }
 
