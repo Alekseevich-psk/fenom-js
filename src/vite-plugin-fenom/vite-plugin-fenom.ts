@@ -44,8 +44,10 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
         const fullPath = resolve(rootDir, baseDir);
         const globPattern = dataGlob.replace(baseDir, '').replace(/^\//, ''); // → **/*.json
 
-        console.log('[Fenom Plugin] Base dir:', fullPath);
-        console.log('[Fenom Plugin] Glob pattern:', globPattern);
+        if (debug) {
+            console.log('[Fenom Plugin] Base dir:', fullPath);
+            console.log('[Fenom Plugin] Glob pattern:', globPattern);
+        }
 
         try {
             await fs.access(fullPath);
@@ -61,7 +63,9 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
             dot: true,
         });
 
-        console.log('Found JSON files:', files);
+        if (debug) {
+            console.log('Found JSON files:', files);
+        }
 
         const jsonData: Record<string, any> = {};
 
@@ -77,6 +81,7 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
         }
 
         if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Loaded data keys:', Object.keys(jsonData));
+        if (debug) console.log(jsonData);
         return jsonData;
     }
 
@@ -107,27 +112,44 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
             templateLoader = createAsyncLoader(root);
             if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Template loader created for root:', root);
 
-            server.watcher.on('change', (filePath) => {
-                if (filePath.endsWith('.tpl')) {
-                    if (debug) console.log('[Fenom Plugin] 🔄 Full reload triggered:', filePath);
-                    server.ws.send({ type: 'full-reload' });
-                }
-            });
+            // === Добавляем отслеживание ===
+            const tplDir = resolve(config.root, pages);
+            const dataDir = resolve(config.root, data.split('**')[0]);
 
-            // === Перезагрузка данных при изменении JSON ===
-            server.watcher.add(resolve(config.root, data));
+            server.watcher.add(tplDir);
+            server.watcher.add(dataDir);
+
+            if (debug) {
+                console.log('[Fenom Plugin] 📂 Watching TPL:', tplDir);
+                console.log('[Fenom Plugin] 📂 Watching DATA:', dataDir);
+            }
+
+            // === ЕДИНСТВЕННЫЙ обработчик ===
             server.watcher.on('change', async (filePath) => {
-                if (filePath.endsWith('.json')) {
+                const normalizedPath = filePath.replace(/\\/g, '/');
+
+                if (filePath.endsWith('.tpl')) {
+                    if (debug) console.log('[Fenom Plugin] 🔄 TPL changed:', filePath);
+                    server.ws.send({ type: 'full-reload' });
+                    return;
+                }
+
+                if (normalizedPath.endsWith('.json') && normalizedPath.includes(dataDir.replace(/\\/g, '/'))) {
+                    if (debug) console.log('[Fenom Plugin] 📄 JSON changed:', filePath);
+
                     try {
-                        const reloaded = await loadGlobalData(config.root);
-                        globalData = reloaded;
-                        if (debug) console.log('\x1b[33m[Fenom Plugin]\x1b[0m Global data reloaded:', Object.keys(globalData));
+                        const newData = await loadGlobalData(config.root);
+                        globalData = newData;
+                        if (debug) console.log('\x1b[33m[Fenom Plugin]\x1b[0m Global data reloaded:', Object.keys(newData));
                     } catch (err) {
-                        console.warn('[Fenom Plugin] Failed to reload JSON data');
+                        console.warn('[Fenom Plugin] Failed to reload JSON data:', err);
+                    } finally {
+                        server.ws.send({ type: 'full-reload' });
                     }
                 }
             });
 
+            // === handlePageRequest ===
             const handlePageRequest = async (req: any, res: any, next: () => void) => {
                 const url = req.url;
 
@@ -157,12 +179,11 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                 try {
                     const source = await templateLoader(relativePath);
 
-                    // === Формируем контекст: глобальные данные + мета ===
                     const context = {
                         title: `${pageName.charAt(0).toUpperCase() + pageName.slice(1)} Page`,
                         debug,
                         url,
-                        ...globalData, // ← все JSON-файлы в context
+                        ...globalData,
                     };
 
                     let html = await FenomJs(source, context, {
@@ -173,10 +194,9 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
 
                     if (config.mode === 'development') {
                         const hmrScript = `
-                            <script type="module">
-                            import "/@vite/client";
-                            </script>`;
-
+                    <script type="module">
+                    import "/@vite/client";
+                    </script>`;
                         if (html.includes('</head>')) {
                             html = html.replace('</head>', hmrScript + '\n</head>');
                         } else if (html.includes('<body>')) {
@@ -195,15 +215,9 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     if (err.message.includes('Template not found')) {
                         return next();
                     }
-
                     console.error('\x1b[36m[Fenom Plugin]\x1b[0m Rendering error:', err.message);
                     res.statusCode = 500;
-                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                    res.end(`
-                        <h1>🔧 Ошибка рендеринга</h1>
-                        <p><strong>${err.message}</strong></p>
-                        <pre>${err.stack}</pre>
-                    `);
+                    res.end(`<h1>🔧 Ошибка</h1><pre>${err.stack}</pre>`);
                 }
             };
 

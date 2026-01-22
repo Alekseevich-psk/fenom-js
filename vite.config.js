@@ -7,7 +7,7 @@ export default defineConfig({
             pages: 'src/demo/pages',
             data: 'src/demo/data/**/*.json',
             root: 'src/demo',
-            // debug: true
+            debug: true
         })
     ],
     build: {

@@ -73,6 +73,10 @@
         {ignore}
         {set $count = $count - $count} {$count}
         {/ignore}
+
+        <br>
+        <br>
+        {$data.user.name}
     </ul>
 </section>
 
