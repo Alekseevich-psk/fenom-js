@@ -7,8 +7,7 @@
     "module": "src/index.js",
     "type": "module",
     "scripts": {
-        "link:fenom": "node scripts/link-fenom.js",
-        "link:vite-plugin-fenom": "node scripts/link-vite-plugin-fenom.js",
+        "link:fenom": "node scripts/link-fenom.js & node scripts/link-vite-plugin-fenom.js",
         "test:render": "node test-render.js",
         "dev": "vite",
         "preview": "vite preview",

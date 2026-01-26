@@ -252,37 +252,68 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                 const files = await fastGlob(pattern);
                 if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Found templates:', files);
 
-                // === Анализ входов и ассетов — как было ===
-                const inputEntries = config.build.rollupOptions.input;
-                let inputFiles: string[] = [];
-
-                if (Array.isArray(inputEntries)) {
-                    inputFiles = inputEntries;
-                } else if (typeof inputEntries === 'object' && inputEntries !== null) {
-                    inputFiles = Object.values(inputEntries);
-                } else if (typeof inputEntries === 'string') {
-                    inputFiles = [inputEntries];
-                }
-
-                let jsChunk = '';
-                const cssAssets: string[] = [];
+                // === Сбор информации о выходных файлах ===
+                const entryChunks: Record<string, string> = {}; // inputPath → /out/path.js
+                const cssAssets: Record<string, string> = {};   // inputPath → /out/path.css
 
                 for (const [fileName, file] of Object.entries(bundle)) {
-                    if (file.type === 'chunk' && /\.(js|ts)$/.test(fileName)) {
-                        jsChunk = `/${fileName}`;
+                    const outFile = `/${fileName}`;
+
+                    if (file.type === 'chunk' && file.facadeModuleId) {
+                        // Это JS-чанк, сопоставим с входом
+                        const inputPath = relative(config.root, file.facadeModuleId).replace(/\\/g, '/');
+                        entryChunks[inputPath] = outFile;
                     }
+
                     if (file.type === 'asset' && fileName.endsWith('.css')) {
-                        cssAssets.push(`/${fileName}`);
+                        // Это CSS-ассет. Попробуем найти, из какого входа.
+                        // Vite не всегда хранит source, но имя может помочь
+                        if (file.name && file.name.endsWith('.css')) {
+                            // Пример: file.name = 'style.css' или 'style-hash.css'
+                            const baseName = basename(file.name, '.css');
+                            // Пока просто запоминаем — уточним позже
+                            cssAssets[file.name] = outFile;
+                        }
                     }
                 }
 
+                // === Анализ входов ===
+                const inputEntries = config.build.rollupOptions.input;
+                const inputs: string[] = [];
+
+                if (Array.isArray(inputEntries)) {
+                    inputs.push(...inputEntries.filter((i): i is string => typeof i === 'string'));
+                } else if (typeof inputEntries === 'object' && inputEntries !== null) {
+                    inputs.push(...Object.values(inputEntries).filter((i): i is string => typeof i === 'string'));
+                } else if (typeof inputEntries === 'string') {
+                    inputs.push(inputEntries);
+                }
+
+                // === Карта замены: исходный путь → собранный файл ===
                 const replacementMap = new Map<string, string>();
-                for (const input of inputFiles) {
-                    if (/\.(ts|js)$/.test(input) && jsChunk) {
-                        replacementMap.set(input, jsChunk);
+
+                for (const input of inputs) {
+                    if (!input.endsWith('.js') && !input.endsWith('.ts') && !input.endsWith('.css')) continue;
+
+                    const normalizedInput = resolve(input).replace(/\\/g, '/');
+                    const relativeInput = relative(config.root, normalizedInput).replace(/\\/g, '/');
+
+                    if (input.endsWith('.ts') || input.endsWith('.js')) {
+                        const moduleId = relative(config.root, normalizedInput).replace(/\\/g, '/');
+                        if (entryChunks[moduleId]) {
+                            replacementMap.set(relativeInput, entryChunks[moduleId]);
+                        }
                     }
-                    if (/\.css$/.test(input) && cssAssets.length > 0) {
-                        replacementMap.set(input, cssAssets[0]);
+
+                    if (input.endsWith('.css')) {
+                        const cssFileName = basename(input);
+                        // Ищем ассет, содержащий имя файла
+                        const matchedCss = Object.keys(cssAssets).find(name =>
+                            name === cssFileName || name.startsWith(basename(cssFileName, '.css'))
+                        );
+                        if (matchedCss) {
+                            replacementMap.set(relativeInput, cssAssets[matchedCss]);
+                        }
                     }
                 }
 
@@ -291,50 +322,46 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     const fileName = basename(file, '.tpl');
                     const outputFileName = fileName === 'index' ? 'index.html' : `${fileName}.html`;
 
-                    try {
-                        const source = await fs.readFile(file, 'utf-8');
+                    const source = await fs.readFile(file, 'utf-8');
+                    const context = {
+                        title: `${fileName.charAt(0).toUpperCase() + fileName.slice(1)} Page`,
+                        debug: false,
+                        url: '/' + (fileName === 'index' ? '' : fileName),
+                        ...globalData,
+                    };
 
-                        const context = {
-                            title: `${fileName.charAt(0).toUpperCase() + fileName.slice(1)} Page`,
-                            debug: false,
-                            url: '/' + (fileName === 'index' ? '' : fileName),
-                            ...globalData, // ← все данные из data/**/*.json
-                        };
+                    let html = await FenomJs(source, context, {
+                        loader: templateLoader,
+                        root,
+                        minify: minifyHtml,
+                    });
 
-                        let html = await FenomJs(source, context, {
-                            loader: templateLoader,
-                            root,
-                            minify: minifyHtml,
-                        });
+                    // === Замена путей ===
+                    for (const [devPath, prodPath] of replacementMap) {
+                        const fullDevPath = '/' + devPath;
+                        const escaped = fullDevPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-                        for (const [devPath, prodPath] of replacementMap) {
-                            const fullDevPath = '/' + devPath;
-                            const escaped = fullDevPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-                            const scriptRegex = new RegExp(`<script[^>]+src=["']${escaped}["'][^>]*>`, 'gi');
-                            if (scriptRegex.test(html)) {
-                                html = html.replace(scriptRegex, `<script type="module" src="${prodPath}"></script>`);
-                            }
-
-                            const linkRegex = new RegExp(`<link[^>]+href=["']${escaped}["'][^>]*>`, 'gi');
-                            if (linkRegex.test(html)) {
-                                html = html.replace(linkRegex, `<link rel="stylesheet" href="${prodPath}">`);
-                            }
+                        const scriptRegex = new RegExp(`<script[^>]+src=["']${escaped}["'][^>]*/?>`, 'gi');
+                        if (scriptRegex.test(html)) {
+                            html = html.replace(scriptRegex, `<script type="module" src="${prodPath}"></script>`);
                         }
 
-                        this.emitFile({
-                            type: 'asset',
-                            fileName: outputFileName,
-                            source: html,
-                        });
-
-                        if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Generated:', outputFileName);
-                    } catch (err) {
-                        console.error('\x1b[31m[Fenom Plugin]\x1b[0m Error rendering:', file);
+                        const linkRegex = new RegExp(`<link[^>]+href=["']${escaped}["'][^>]*/?>`, 'gi');
+                        if (linkRegex.test(html)) {
+                            html = html.replace(linkRegex, `<link rel="stylesheet" href="${prodPath}">`);
+                        }
                     }
+
+                    this.emitFile({
+                        type: 'asset',
+                        fileName: outputFileName,
+                        source: html,
+                    });
+
+                    if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Generated:', outputFileName);
                 }
             } catch (err) {
-                console.error('\x1b[31m[Fenom Plugin]\x1b[0m glob error:', err);
+                console.error('\x1b[31m[Fenom Plugin]\x1b[0m Error during HTML generation:', err);
             }
         },
     };
