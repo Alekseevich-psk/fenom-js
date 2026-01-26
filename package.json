@@ -14,8 +14,7 @@
         "preview": "vite preview",
         "build": "vite build",
         "build:fenom": "tsc -p ./src/fenom-js/tsconfig.build.json & vite build -c ./src/fenom-js/fenom.build.js",
-        "build:vite-plugin": "tsc -p ./src/vite-plugin-fenom/tsconfig.build.json & ./src/vite-plugin-fenom/rollup -c",
-        "build:vite-plugin-rollup": "rollup -c ./rollup.config.js",
+        "build:vite-plugin": "rollup -c ./rollup.config.js",
         "build:copy-packages": "node scripts/copy-packages.js",
         "build:all": "pnpm run build:fenom & pnpm run build:vite-plugin & node scripts/copy-packages.js",
         "build:clear": "node scripts/build-clear.js"
