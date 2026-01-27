@@ -11,7 +11,7 @@ const loader = createAsyncLoader(root);
 // Читаем данные
 async function run() {
     try {
-        const dataPath = resolve('./src/demo/data/data.json');
+        const dataPath = resolve('./src/demo/data/cat.json');
         const rawData = await readFile(dataPath, 'utf-8');
         const data = JSON.parse(rawData);
 
@@ -19,7 +19,7 @@ async function run() {
         data.date = Math.floor(Date.now() / 1000);
 
         // Читаем шаблон
-        const templatePath = resolve('./src/demo/pages/index.tpl');
+        const templatePath = resolve('./src/demo/pages/test.tpl');
         const template = await readFile(templatePath, 'utf-8');
         // console.log('📄 Шаблон загружен:', template); // ← добавь это
 
