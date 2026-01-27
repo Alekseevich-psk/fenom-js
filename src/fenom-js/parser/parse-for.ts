@@ -1,8 +1,11 @@
 import type { Token } from './../types/token';
+import type { ASTNode } from './../types/common';
 
-export function parseFor(tokens: Token[], index: number): { node: any; nextIndex: number; } {
+import { parse } from './parser';
+
+export function parseFor(tokens: Token[], index: number): { node: ASTNode; nextIndex: number; } {
     const forToken = tokens[index];
-    const node: any = {
+    const node: ASTNode = {
         type: 'for',
         key: forToken.key || null,
         item: forToken.item,
@@ -16,75 +19,53 @@ export function parseFor(tokens: Token[], index: number): { node: any; nextIndex
     let depth = 0;
     let inElseBranch = false;
 
+    const bodyTokens: Token[] = [];
+    const elseTokens: Token[] = [];
+
     while (i < tokens.length) {
         const token = tokens[i];
 
-        if (token.type === 'for') {
+        if (token.type === 'for' || token.type === 'foreach') {
             depth++;
         }
 
-        if (token.type === 'endfor') {
+        if (token.type === 'endfor' || token.type === 'endforeach') {
             if (depth > 0) {
                 depth--;
-                if (!inElseBranch) {
-                    node.body.push(token);
-                } else {
-                    node.elseBody.push(token);
-                }
-                i++;
-                continue;
-            }
-
-            // Завершаем цикл
-            return {
-                node,
-                nextIndex: i + 1
-            };
-        }
-
-        if (depth > 0) {
-            if (!inElseBranch) {
-                node.body.push(token);
             } else {
-                node.elseBody.push(token);
+                // Выход: нашли конец текущего цикла
+                break;
             }
-            i++;
-            continue;
         }
 
-        // Обработка {foreachelse}
         if (token.type === 'foreachelse') {
             if (depth === 0) {
                 inElseBranch = true;
                 i++;
                 continue;
             }
-            // Если внутри вложенного цикла — просто пропускаем
-            node.body.push(token); // ❌ или нет?
-            i++;
-            continue;
         }
 
-        // Обработка break / continue
-        if (['break', 'continue'].includes(token.type)) {
-            if (inElseBranch) {
-                node.elseBody.push(token);
-            } else {
-                node.body.push(token);
-            }
-            i++;
-            continue;
-        }
-
-        // Простые токены
+        // Собираем в нужный буфер
         if (!inElseBranch) {
-            node.body.push(token);
+            bodyTokens.push(token);
         } else {
-            node.elseBody.push(token);
+            elseTokens.push(token);
         }
 
         i++;
     }
 
-    throw new Error('Unclosed for loop: expected {/for}');
+    if (i >= tokens.length) {
+        throw new Error('Unclosed for loop: expected {/for}');
+    }
+
+    // 🔥 Рекурсивно парсим тела
+    node.body = parse(bodyTokens);
+    node.elseBody = parse(elseTokens);
+
+    return {
+        node,
+        nextIndex: i + 1 // пропускаем {/for}
+    };
 }
