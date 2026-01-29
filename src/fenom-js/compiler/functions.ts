@@ -134,17 +134,18 @@ export function minifyHTML(html: string): string {
 }
 
 export function getFromContext(path: string, context: any): any {
+    if (!path || typeof path !== 'string') return undefined;
 
-    const keys = path.split('.').map(k => k.trim());
+    const cleanPath = path.startsWith('$') ? path.slice(1) : path;
+    const keys = cleanPath.split('.').map(k => k.trim());
+
     let value: any = context;
-
     for (const key of keys) {
         if (value == null || typeof value !== 'object') {
             return undefined;
         }
         value = value[key];
     }
-
     return value;
 }
 

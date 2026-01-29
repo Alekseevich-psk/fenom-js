@@ -79,6 +79,23 @@ export const IF_PATTERNS: TokenPattern[] = [
 
 // --- ГРУППА: Циклы ---
 export const FOREACH_PATTERNS: TokenPattern[] = [
+    {
+        type: 'for_range',
+        regex: /^\{(for|foreach)\s+(\d+)\.\.(\d+)\s+as\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
+        process(match) {
+            const start = parseInt(match[2], 10);
+            const end = parseInt(match[3], 10);
+            const item = match[4];
+            const reverse = match[0].includes('| reverse');
+
+            return {
+                start,
+                end,
+                item,
+                reverse
+            };
+        }
+    },
     // Поддержка: {for $arr as $item} и {foreach $arr as $item}
     {
         type: 'for',

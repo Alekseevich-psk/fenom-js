@@ -76,7 +76,7 @@ export function parse(tokens: Token[]): ASTNode[] {
             continue;
         }
 
-        if (token.type === 'for' || token.type === 'foreach') {
+        if (['for', 'foreach', 'for_range'].includes(token.type)) {
             const { node, nextIndex } = parseFor(tokens, i);
             ast.push(node);
             i = nextIndex;
