@@ -1,7 +1,7 @@
 import type { ASTNode, TemplateLoader } from '../types/common';
 import { tokenize } from '../lexer/tokenize';
 import { parse } from '../parser/parser';
-import { compileNode } from './compile-node';
+import { compileAST } from './compile-ast';
 
 export function compile(
     ast: ASTNode[],
@@ -26,7 +26,6 @@ export function compile(
                 const parentAst = parse(tokens);
 
                 const parentBlocks: Record<string, ASTNode[]> = {};
-
                 for (const node of parentAst) {
                     if (node.type === 'block') {
                         parentBlocks[node.name] = node.body;
@@ -35,113 +34,26 @@ export function compile(
 
                 const finalBlocks = { ...parentBlocks, ...blocks };
                 const blockContent: Record<string, string> = {};
-                
+
                 context.block = async (name: string): Promise<string> => {
                     if (blockContent[name] !== undefined) return blockContent[name];
                     const blockAst = finalBlocks[name];
-                    
                     if (!blockAst) {
                         blockContent[name] = '';
                         return '';
                     }
-                    let out = '';
-
-                    const localContext = { ...context };
-                    for (const node of blockAst) {
-                        if (node.type === 'include') {
-                            try {
-                                const includedTemplate = await loader(node.file);
-                                const incTokens = tokenize(includedTemplate);
-                                const incAst = parse(incTokens);
-                                const newContext = { ...localContext };
-                                if (node.params) {
-                                    for (const [key, value] of Object.entries(node.params)) {
-                                        if (typeof value === 'string' && value.startsWith('$')) {
-                                            newContext[key] = localContext[value.slice(1)];
-                                        } else {
-                                            newContext[key] = value;
-                                        }
-                                    }
-                                }
-                                for (const child of incAst) {
-                                    compileNode(child, code => (out += code), newContext, filters);
-                                }
-                            } catch {
-                                out += `[Include error: ${node.file}]`;
-                            }
-                        } else {
-                            compileNode(node, code => (out += code), localContext, filters);
-                        }
-                    }
-                    blockContent[name] = out;
-                    return out;
+                    blockContent[name] = await compileAST(blockAst, loader, context, filters);
+                    return blockContent[name];
                 };
 
-                let result = '';
-                for (const node of parentAst) {
-                    if (node.type === 'block') {
-                        result += await context.block(node.name);
-                    } else if (node.type === 'include') {
-                        try {
-                            const includedTemplate = await loader(node.file);
-                            const incTokens = tokenize(includedTemplate);
-                            const incAst = parse(incTokens);
-                            const newContext = { ...context };
-                            if (node.params) {
-                                for (const [key, value] of Object.entries(node.params)) {
-                                    if (typeof value === 'string' && value.startsWith('$')) {
-                                        newContext[key] = context[value.slice(1)];
-                                    } else {
-                                        newContext[key] = value;
-                                    }
-                                }
-                            }
-                            for (const child of incAst) {
-                                compileNode(child, code => (result += code), newContext, filters);
-                            }
-                        } catch {
-                            result += `[Include error: ${node.file}]`;
-                        }
-                    } else {
-                        compileNode(node, code => (result += code), context, filters);
-                    }
-                }
-
-                return result;
+                return await compileAST(parentAst, loader, context, filters);
             } catch (err: any) {
                 return `[Render error: ${err.message}]`;
             }
         };
     } else {
         return async function (context: any, filters: any): Promise<string> {
-            let result = '';
-            for (const node of ast) {
-                if (node.type === 'include') {
-                    try {
-                        const includedTemplate = await loader(node.file);
-                        const incTokens = tokenize(includedTemplate);
-                        const incAst = parse(incTokens);
-                        const newContext = { ...context };
-                        if (node.params) {
-                            for (const [key, value] of Object.entries(node.params)) {
-                                if (typeof value === 'string' && value.startsWith('$')) {
-                                    newContext[key] = context[value.slice(1)];
-                                } else {
-                                    newContext[key] = value;
-                                }
-                            }
-                        }
-                        for (const child of incAst) {
-                            compileNode(child, code => (result += code), newContext, filters);
-                        }
-                    } catch {
-                        result += `[Include error: ${node.file}]`;
-                    }
-                } else {
-                    compileNode(node, code => (result += code), context, filters);
-                }
-            }
-            return result;
+            return await compileAST(ast, loader, context, filters);
         };
     }
 }
