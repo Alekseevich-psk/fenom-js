@@ -15,7 +15,7 @@
         "build:fenom": "rollup -c ./rollup.config.fenom.js",
         "build:vite-plugin": "rollup -c ./rollup.config.js",
         "build:copy-packages": "node scripts/copy-packages.js",
-        "build:all": "pnpm run build:fenom & pnpm run build:vite-plugin & node scripts/copy-packages.js",
+        "build:all": "rollup -c ./rollup.config.fenom.js & rollup -c ./rollup.config.js",
         "build:clear": "node scripts/build-clear.js"
     },
     "keywords": [
