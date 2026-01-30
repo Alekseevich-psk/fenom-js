@@ -1,6 +1,6 @@
 import type { TemplateLoader } from '../types/common';
 import { join } from 'path';
-import { readFile } from 'fs/promises'; // ← асинхронный readFile
+import { readFile } from 'fs/promises';
 
 export function createAsyncLoader(root: string): TemplateLoader {
     return async function loader(file: string) {

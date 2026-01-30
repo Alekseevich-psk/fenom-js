@@ -12,7 +12,7 @@
         "dev": "vite",
         "preview": "vite preview",
         "build": "vite build",
-        "build:fenom": "tsc -p ./src/fenom-js/tsconfig.build.json & vite build -c ./src/fenom-js/fenom.build.js",
+        "build:fenom": "rollup -c ./rollup.config.fenom.js",
         "build:vite-plugin": "rollup -c ./rollup.config.js",
         "build:copy-packages": "node scripts/copy-packages.js",
         "build:all": "pnpm run build:fenom & pnpm run build:vite-plugin & node scripts/copy-packages.js",

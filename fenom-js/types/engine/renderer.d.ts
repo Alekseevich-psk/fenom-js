@@ -1,6 +1,6 @@
 import type { TemplateLoader } from '../types/common';
-export declare function FenomJs(template: string, context?: Record<string, any>, options?: {
-    root?: string;
+export declare function FenomJs(template: string, options?: {
+    context?: Record<string, any>;
     loader?: TemplateLoader;
     minify?: boolean;
 }): Promise<string>;

@@ -3,9 +3,12 @@
 {block 'main'}
 
 
-{foreach $list as $item}
+{foreach 1..3 as $n}
+<p>Просто текст - {$n}</p>
+{/foreach}
 
-{include 'file:includes/test-section.tpl'}
+{foreach $cat.list as $item}
+
 
 <div class="wrapper">
     <div class="wrap-view">

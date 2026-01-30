@@ -2,7 +2,8 @@ import type { Plugin, ResolvedConfig } from 'vite';
 import { join, relative, resolve, dirname, basename } from 'path';
 import * as fs from 'fs/promises';
 
-import { FenomJs, createAsyncLoader } from 'fenom-js';
+import { FenomJs } from 'fenom-js';
+import { createAsyncLoader } from 'fenom-js/node';
 import type { TemplateLoader } from 'fenom-js';
 
 // === Опции плагина ===
@@ -186,9 +187,9 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                         ...globalData,
                     };
 
-                    let html = await FenomJs(source, context, {
+                    let html = await FenomJs(source, {
+                        context: context,
                         loader: templateLoader,
-                        root,
                         minify: minifyHtml,
                     });
 
@@ -329,10 +330,10 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                         url: '/' + (fileName === 'index' ? '' : fileName),
                         ...globalData,
                     };
-
-                    let html = await FenomJs(source, context, {
+                    
+                    let html = await FenomJs(source, {
+                        context: context,
                         loader: templateLoader,
-                        root,
                         minify: minifyHtml,
                     });
 

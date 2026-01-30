@@ -1,9 +1,5 @@
-// src/index.ts
-import { FenomJs } from './engine/renderer';
-import { createAsyncLoader } from './engine/loader';
-
 // Основной API
-export { FenomJs, createAsyncLoader };
+export { FenomJs } from './engine/renderer';
 export type { TemplateLoader } from './types/common';
 
 // Advanced API — для плагинов, тестов, инструментов

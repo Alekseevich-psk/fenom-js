@@ -9,7 +9,13 @@
     "exports": {
         ".": {
             "types": "./types/index.d.ts",
-            "default": "./index.cjs"
+            "import": "./index.mjs",
+            "require": "./index.cjs"
+        },
+        "./node": {
+            "types": "./types/node.d.ts",
+            "import": "./node.mjs",
+            "require": "./node.cjs"
         }
     },
     "engines": {

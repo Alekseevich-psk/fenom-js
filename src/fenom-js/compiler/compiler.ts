@@ -5,7 +5,7 @@ import { compileAST } from './compile-ast';
 
 export function compile(
     ast: ASTNode[],
-    loader: TemplateLoader
+    loader?: TemplateLoader
 ): (context: any, filters: any) => Promise<string> {
     const blocks: Record<string, ASTNode[]> = {};
     let parentFile: string | null = null;
@@ -20,6 +20,10 @@ export function compile(
 
     if (parentFile) {
         return async function (context: any, filters: any): Promise<string> {
+            if (!loader) {
+                throw new Error(`Template uses {extends '${parentFile}'}, but no loader provided`);
+            }
+
             try {
                 const template = await loader(parentFile);
                 const tokens = tokenize(template);

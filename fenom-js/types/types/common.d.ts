@@ -10,3 +10,9 @@ export interface UserConfig {
     minify?: boolean;
 }
 export type TemplateLoader = (file: string) => Promise<string>;
+export interface FenomOptions {
+    context?: Record<string, any>;
+    loader?: TemplateLoader;
+    minify?: boolean;
+    debug?: boolean;
+}
