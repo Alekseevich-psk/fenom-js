@@ -28,7 +28,18 @@
             {
                 "id": 1,
                 "name": "Анна Смирнова",
-                "index": 0
+                "index": 0,
+                "list": [
+                    {
+                        "title": "title - 01"
+                    },
+                    {
+                        "title": "title - 02"
+                    },
+                    {
+                        "title": "title - 03"
+                    }
+                ]
             },
             {
                 "id": 2,

@@ -2,7 +2,6 @@
 {block "title"}Расширенная демонстрация Fenom!{/block}
 
 {block "main"}
-
 <h1>🚀 Расширенная демонстрация возможностей Fenom</h1>
 
 {ignore}
@@ -44,6 +43,7 @@
         {$count % 2}
         {/ignore}
 
+        {* start *}
         {set $count = 5}
         <li>Инкремент: {$count++} ~ {$count}</li>
         {ignore}
@@ -65,7 +65,8 @@
         {set $count = 5}
         <li>Сложение: {set $count = $count + $count} {$count}</li>
         {ignore}
-        {set $count = $count + $count} {$count}
+        {set $count = $count + $count} 
+        {$count}
         {/ignore}
 
         {set $count = 5}
@@ -74,9 +75,6 @@
         {set $count = $count - $count} {$count}
         {/ignore}
 
-        <br>
-        <br>
-        {$data.user.name}
     </ul>
 </section>
 
@@ -108,12 +106,20 @@
         <strong>{$key+1}. {$item}</strong>
     </div>
 
-        {set $price = 300}
+    {set $price = 300}
 
-        {if $price < 1000}
+    {if $price < 1000}
         <p>🎉 Условие выполнено {$price}</p>
         {/if}
-    {/foreach}
+        {/foreach}
+
+        <p>Многоуровневые массивы</p>
+        {$data.user.name}<br>
+
+
+        {foreach $data.user.friends as $value}
+        {$value.name}
+        {/foreach}
 
 </section>
 

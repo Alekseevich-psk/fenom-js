@@ -11,17 +11,23 @@ export async function FenomJs(
         context?: Record<string, any>;
         loader?: TemplateLoader;
         minify?: boolean;
+        debug?: boolean;
     }
 ): Promise<string> {
     const {
         context = {},
         loader,
-        minify = false
+        minify = false,
+        debug = false
     } = options || {};
 
     try {
         const tokens = tokenize(template);
+        if (debug) console.log('tokens', tokens);
+
         const ast = parse(tokens);
+        if (debug) console.log('ast', ast);
+
         const compiled = compile(ast, loader);
         const html = await compiled(context, filters);
         return minify ? minifyHTML(html) : html;

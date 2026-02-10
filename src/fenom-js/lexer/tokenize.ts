@@ -109,6 +109,8 @@ export function tokenize(input: string): Token[] {
             console.warn(`Skip unknown tag at ${pos}: "${context}"`);
             pos++;
         }
+
+        console.log('[TOKEN] matched:', tokens);
     }
 
     return tokens;

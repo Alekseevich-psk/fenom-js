@@ -8,7 +8,7 @@ const root = resolve('./src/demo');
 // Читаем данные
 async function run() {
     try {
-        const dataPath = resolve('./src/demo/data/cat.json');
+        const dataPath = resolve('./src/demo/data/data.json');
         const rawData = await readFile(dataPath, 'utf-8');
         const data = JSON.parse(rawData);
         
@@ -24,7 +24,7 @@ async function run() {
 
         // (Опционально) записать в файл
         await writeFile('example/index.html', html, 'utf-8');
-        // console.log('\n📜 Сохранено в example/index.html');
+        console.log('\n📜 Сохранено в example/index.html');
     } catch (err) {
         console.error('❌ Ошибка рендеринга:', err);
     }
