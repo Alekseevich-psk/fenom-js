@@ -100,7 +100,7 @@ export function warnFilter(
 
         switch (expected) {
             case 'array':
-                isValid = Array.isArray(value);
+                isValid = Array.isArray(value) || typeof value === 'string';
                 break;
             case 'string':
                 isValid = typeof value === 'string';
@@ -137,15 +137,51 @@ export function getFromContext(path: string, context: any): any {
     if (!path || typeof path !== 'string') return undefined;
 
     const cleanPath = path.startsWith('$') ? path.slice(1) : path;
-    const keys = cleanPath.split('.').map(k => k.trim());
+
+    const tokens: string[] = [];
+    let current = '';
+    let inBracket = false;
+
+    for (const char of cleanPath) {
+        if (char === '.' && !inBracket) {
+            if (current) {
+                tokens.push(current);
+                current = '';
+            }
+        } else if (char === '[') {
+            if (current) {
+                tokens.push(current);
+                current = '';
+            }
+            current = '[';
+            inBracket = true;
+        } else if (char === ']') {
+            current += ']';
+            tokens.push(current);
+            current = '';
+            inBracket = false;
+        } else {
+            current += char;
+        }
+    }
+
+    if (current) {
+        tokens.push(current);
+    }
 
     let value: any = context;
-    for (const key of keys) {
-        if (value == null || typeof value !== 'object') {
-            return undefined;
+    for (const token of tokens) {
+        if (token.startsWith('[')) {
+            const match = token.match(/^\[(?:'(.+)'|"(.+)"|(\d+))\]$/);
+            if (match) {
+                const key = match[1] || match[2] || parseInt(match[3], 10);
+                value = value?.[key];
+            }
+        } else {
+            value = value?.[token];
         }
-        value = value[key];
     }
+
     return value;
 }
 

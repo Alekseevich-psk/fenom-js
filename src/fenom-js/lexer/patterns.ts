@@ -2,51 +2,32 @@ import type { TokenPattern } from "./../types/token";
 
 // --- ГРУППА: Переменные и присвоение ---
 export const SET_PATTERNS: TokenPattern[] = [
-    // 1. {set $var = {...} или [...]}
     {
         type: 'set',
-        regex: /^\{set\s+\$(\w+)\s*=\s*(\{[^}]*\}|\[[^}]*\])\}/,
+        regex: /^\{set\s+\$([^\s}]+)\s*=\s*(['"])(.*?)\2\}/,
         process(match) {
-            const variable = match[1];
-            const value = match[2]; // [1,2,3] или {a:1}
-            return { variable, value };
+            return { variable: '$' + match[1], value: match[3] };
         }
     },
-
-    // 2. {set $var = 'string'}
     {
         type: 'set',
-        regex: /^\{set\s+\$(\w+)\s*=\s*(['"])(.*?)\2\}/,
+        regex: /^\{set\s+\$([^\s}]+)\s*=\s*([^}\s][^}]*)\}/,
         process(match) {
-            const variable = match[1];
-            const value = match[3];
-            return { variable, value };
+            return { variable: '$' + match[1], value: match[2].trim() };
         }
     },
-
-    // 3. {set $var = true / 123 / $other}
-    {
-        type: 'set',
-        regex: /^\{set\s+\$(\w+)\s*=\s*([^}\s][^}]*)\}/,
-        process: (match) => ({
-            variable: match[1],
-            value: match[2].trim() // может быть: 1, $a + 1, $count * 2
-        })
-    },
-
-    // add, var — остаются
     {
         type: 'add',
-        regex: /^\{add\s+\$(\w+)\s*\+\+\}/,
+        regex: /^\{add\s+\$([^\s}]+)\s*\+\+\}/,
         process(match) {
-            return { variable: match[1] };
+            return { variable: '$' + match[1] };
         }
     },
     {
         type: 'var',
-        regex: /^\{var\s+\$(\w+)\s*=\s*(['"])(.*?)\2\}/,
+        regex: /^\{var\s+\$([^\s}]+)\s*=\s*(['"])(.*?)\2\}/,
         process(match) {
-            return { variable: match[1], value: match[3] };
+            return { variable: '$' + match[1], value: match[3] };
         }
     }
 ];
@@ -79,50 +60,51 @@ export const IF_PATTERNS: TokenPattern[] = [
 
 // --- ГРУППА: Циклы ---
 export const FOREACH_PATTERNS: TokenPattern[] = [
+    // 1. for i..j
     {
         type: 'for_range',
         regex: /^\{(for|foreach)\s+(\d+)\.\.(\d+)\s+as\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
         process(match) {
-            const start = parseInt(match[2], 10);
-            const end = parseInt(match[3], 10);
-            const item = match[4];
-            const reverse = match[0].includes('| reverse');
-
             return {
-                start,
-                end,
-                item,
-                reverse
+                start: parseInt(match[2], 10),
+                end: parseInt(match[3], 10),
+                item: match[4],
+                reverse: match[0].includes('| reverse')
             };
         }
     },
-    // Поддержка: {for $arr as $item} и {foreach $arr as $item}
+
+    // 2. {foreach $path.as.array as $item}
     {
         type: 'for',
-        regex: /^\{(for|foreach)\s*\$(\w+(?:\.\w+)?)\s+as\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
+        regex: /^\{(for|foreach)\s*\$([^\s}]+?)\s+as\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
         process: (match) => ({
-            collection: `$${match[2]}`, // ✅ match[2] = 'arr'
-            item: match[3],             // ✅ match[3] = 'value'
+            collection: `$${match[2]}`, // ← любой путь: a.b[0].c
+            item: match[3],
             key: null,
             reverse: match[0].includes('| reverse')
         })
     },
-    // {for $arr as $key => $item}, {foreach $arr as $key => $item}
+
+    // 3. {foreach $path as $key => $item}
     {
         type: 'for',
-        regex: /^\{(for|foreach)\s*\$(\w+(?:\.\w+)?)\s+as\s*\$(\w+)\s*=>\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
+        regex: /^\{(for|foreach)\s*\$([^\s}]+?)\s+as\s*\$(\w+)\s*=>\s*\$(\w+)(?:\s*\|\s*reverse)?\s*\}/,
         process: (match) => ({
-            collection: `$${match[2]}`, // ✅
+            collection: `$${match[2]}`,
             key: match[3],
             item: match[4],
             reverse: match[0].includes('| reverse')
         })
     },
-    // {/for}, {/foreach}
+
+    // 4. endfor
     {
         type: 'endfor',
         regex: /^\{\/(?:for|foreach)\}/
     },
+
+    // 5. break / continue
     {
         type: 'break',
         regex: /^\{break\}/i
@@ -316,9 +298,9 @@ export const IGNORE_PATTERN: TokenPattern[] = [
 export const MISC_PATTERNS: TokenPattern[] = [
     {
         type: 'unset',
-        regex: /^\{unset\s+\$(\w+)\}/,
+        regex: /^\{unset\s+\$([^\s}]+)\}/,
         process(match) {
-            return { variable: match[1] };
+            return { variable: '$' + match[1] };
         }
     },
     {
@@ -401,13 +383,12 @@ export const OUTPUT_PATTERN: TokenPattern[] = [
 export const OPERATOR_PATTERN: TokenPattern[] = [
     {
         type: 'operator',
-        regex: /^\{\$(\w+)\s*(\+\+|--|\+=|-=|\*=|\/=|\%=)\s*([^}]+)?\}/,
+        regex: /^\{\$([^\s}]+)\s*(\+\+|--|\+=|-=|\*=|\/=|\%=)\s*([^}]+)?\}/,
         process: (match) => {
             const variable = match[1];
             const operator = match[2];
-            const value = match[3]?.trim() || '1'; // для +=5 → 5, для ++ → 1
-
-            return { variable, operator, value };
+            const value = match[3]?.trim() || '1';
+            return { variable: '$' + variable, operator, value };
         }
     }
 ];

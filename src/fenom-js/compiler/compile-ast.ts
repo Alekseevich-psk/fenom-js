@@ -167,6 +167,41 @@ export async function compileAST(
                 break;
             }
 
+            case 'operator': {
+                const { variable, operator, value } = node;
+                const varName = variable.startsWith('$') ? variable.slice(1) : variable;
+
+                let numValue = isNaN(+value) ? getFromContext(value, context) ?? 0 : +value;
+
+                const currentValue = getFromContext(variable, context) ?? 0;
+
+                switch (operator) {
+                    case '++':
+                        context[varName] = currentValue + 1;
+                        break;
+                    case '--':
+                        context[varName] = currentValue - 1;
+                        break;
+                    case '+=':
+                        context[varName] = currentValue + numValue;
+                        break;
+                    case '-=':
+                        context[varName] = currentValue - numValue;
+                        break;
+                    case '*=':
+                        context[varName] = currentValue * numValue;
+                        break;
+                    case '/=':
+                        context[varName] = currentValue / numValue;
+                        break;
+                    case '%=':
+                        context[varName] = currentValue % numValue;
+                        break;
+                }
+
+                break;
+            }
+
             case 'block':
                 if (typeof context.block === 'function') {
                     result += await context.block(node.name);
