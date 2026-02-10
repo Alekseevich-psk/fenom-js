@@ -16,8 +16,10 @@ dist-ssr
 
 example
 
-fenom-js
-vite-plugin-fenom
+/fenom-js
+/vite-plugin-fenom
+
+build
 
 # Editor directories and files
 .vscode/*

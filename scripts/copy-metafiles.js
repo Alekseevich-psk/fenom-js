@@ -4,19 +4,19 @@ import path from 'node:path';
 const packages = [
   {
     src: path.resolve('src/fenom-js/package.json'),
-    dest: path.resolve('fenom-js/package.json'),
+    dest: path.resolve('build/fenom-js/package.json'),
   },
   {
     src: path.resolve('readme.md'),
-    dest: path.resolve('fenom-js/readme.md'),
+    dest: path.resolve('build/fenom-js/readme.md'),
   },
   {
     src: path.resolve('src/vite-plugin-fenom/package.json'),
-    dest: path.resolve('vite-plugin-fenom/package.json'),
+    dest: path.resolve('build/vite-plugin-fenom/package.json'),
   },
   {
     src: path.resolve('readme.md'),
-    dest: path.resolve('vite-plugin-fenom/readme.md'),
+    dest: path.resolve('build/vite-plugin-fenom/readme.md'),
   }
 ];
 

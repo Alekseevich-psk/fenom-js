@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+        "target": "ES2018",
+        "lib": ["ES2018", "DOM"],
+        "module": "ES2020",
+        "moduleResolution": "bundler",
+        "strict": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "jsx": "preserve",
+        "baseUrl": ".",
+        "outDir": "./../../build/vite-plugin-fenom/",
+        "declaration": true,
+        "declarationDir": "./../../build/vite-plugin-fenom/types",
+        "emitDeclarationOnly": true,
+        "rootDir": "./",
+        "paths": {
+            "@/*": ["src/*"]
+        }
+    },
+    "include": ["./", "../../rollup.config.js"]
+}

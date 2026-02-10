@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const folders = ['fenom-js', 'vite-plugin-fenom'];
+const folders = ['build'];
 
 folders.forEach(folder => {
     const folderPath = path.resolve(folder);
