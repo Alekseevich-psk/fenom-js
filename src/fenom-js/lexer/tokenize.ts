@@ -110,7 +110,7 @@ export function tokenize(input: string): Token[] {
             pos++;
         }
 
-        console.log('[TOKEN] matched:', tokens);
+        // console.log('[TOKEN] matched:', tokens);
     }
 
     return tokens;
