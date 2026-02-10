@@ -20,7 +20,6 @@ export function compile(
 
     if (parentFile) {
         return async function (context: any, filters: any): Promise<string> {
-            // console.log('context', context);
             
             if (!loader) {
                 throw new Error(`Template uses {extends '${parentFile}'}, but no loader provided`);
@@ -59,7 +58,6 @@ export function compile(
         };
     } else {
         return async function (context: any, filters: any): Promise<string> {
-            // console.log('context_no-parent', context);
             return await compileAST(ast, loader, context, filters);
         };
     }
