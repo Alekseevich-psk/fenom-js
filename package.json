@@ -7,16 +7,16 @@
     "module": "src/index.js",
     "type": "module",
     "scripts": {
-        "link:fenom": "node scripts/link-fenom.js & node scripts/link-vite-plugin-fenom.js",
-        "test:render": "node test-render.js",
-        "dev": "vite",
-        "preview": "vite preview",
-        "build": "vite build",
-        "build:fenom": "rollup -c ./rollup.config.fenom.js",
-        "build:vite-plugin": "rollup -c ./rollup.config.js",
-        "build:copy-packages": "node scripts/copy-packages.js",
-        "build:all": "rollup -c ./rollup.config.fenom.js & rollup -c ./rollup.config.js",
-        "build:clear": "node scripts/build-clear.js"
+        "build: clear": "node scripts/build-clear.js",
+        "build: fenom": "rollup -c ./rollup.config.fenom.js",
+        "build: vite-plugin": "rollup -c ./rollup.config.js",
+        "build: all": "rollup -c ./rollup.config.fenom.js & rollup -c ./rollup.config.js",
+        "build: link-node": "node scripts/link-node.js",
+        "build: copy-metafiles": "node scripts/copy-metafiles.js",
+        "demo: dev": "vite",
+        "demo: preview": "vite preview",
+        "demo: build": "vite build",
+        "run-test": "node scripts/test-render.js"
     },
     "keywords": [
         "template",

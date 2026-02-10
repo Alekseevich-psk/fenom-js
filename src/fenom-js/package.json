@@ -9,8 +9,8 @@
     "exports": {
         ".": {
             "types": "./types/index.d.ts",
-            "import": "./index.mjs",
-            "require": "./index.cjs"
+            "import": "./fenom-js.mjs",
+            "require": "./fenom-js.cjs"
         },
         "./node": {
             "types": "./types/node.d.ts",

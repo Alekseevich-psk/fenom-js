@@ -10,14 +10,14 @@ export default defineConfig({
     // ✅ Используем `dir`, а не `file`
     output: [
         {
-            dir: 'vite-plugin-fenom',                  
+            dir: 'build/vite-plugin-fenom',                  
             format: 'cjs',
             entryFileNames: 'vite-plugin-fenom.cjs',    
             sourcemap: true,
             exports: 'named'
         },
         {
-            dir: 'vite-plugin-fenom',                   
+            dir: 'build/vite-plugin-fenom',                   
             format: 'esm',
             entryFileNames: 'vite-plugin-fenom.mjs',  
             sourcemap: true
@@ -46,7 +46,7 @@ export default defineConfig({
         typescript({
             tsconfig: './src/vite-plugin-fenom/tsconfig.json',
             declaration: true,
-            declarationDir: 'vite-plugin-fenom',
+            declarationDir: 'build/vite-plugin-fenom',
             emitDeclarationOnly: true
         })
     ]

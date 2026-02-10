@@ -8,13 +8,13 @@ export default defineConfig([
         input: 'src/fenom-js/index.ts',
         output: [
             {
-                dir: 'fenom-js',
+                dir: 'build/fenom-js',
                 format: 'esm',
                 entryFileNames: 'fenom-js.mjs',
                 sourcemap: true
             },
             {
-                dir: 'fenom-js',
+                dir: 'build/fenom-js',
                 format: 'cjs',
                 entryFileNames: 'fenom-js.cjs',
                 sourcemap: true,
@@ -37,7 +37,7 @@ export default defineConfig([
             typescript({
                 tsconfig: './src/fenom-js/tsconfig.json',
                 declaration: true,
-                declarationDir: 'fenom-js',
+                declarationDir: 'build/fenom-js',
                 emitDeclarationOnly: true
             })
         ],
@@ -47,13 +47,13 @@ export default defineConfig([
         input: 'src/fenom-js/node.ts',
         output: [
             {
-                dir: 'fenom-js',
+                dir: 'build/fenom-js',
                 format: 'esm',
                 entryFileNames: 'node.mjs',
                 sourcemap: true
             },
             {
-                dir: 'fenom-js',
+                dir: 'build/fenom-js',
                 format: 'cjs',
                 entryFileNames: 'node.cjs',
                 sourcemap: true,

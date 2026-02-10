@@ -1,9 +1,9 @@
 {
     "extends": "./../../tsconfig.base.json",
     "compilerOptions": {
-        "outDir": "./../../fenom-js/",
+        "outDir": "./../../build/fenom-js/",
         "declaration": true,
-        "declarationDir": "./../../fenom-js/types",
+        "declarationDir": "./../../build/fenom-js/types",
         "emitDeclarationOnly": true,
         "rootDir": "./"
     },
