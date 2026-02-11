@@ -14,7 +14,7 @@ export default defineConfig({
         outDir: 'dist',
         emptyOutDir: true,
         rollupOptions: {
-            input: ['src/demo/scripts/main.ts', 'src/demo/styles/style.css'],
+            input: ['/src/demo/scripts/main.ts', 'src/demo/styles/style.css'],
             output: {
                 entryFileNames: `js/[name][hash].js`,
                 assetFileNames: `[ext]/[name][hash].[ext]`,

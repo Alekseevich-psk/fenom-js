@@ -60,7 +60,7 @@ const data = {
 };
 
 // Рендерим
-const html = FenomJs(templateHTML, {
+const html = await FenomJs(templateHTML, {
     context: data,
 });
 
