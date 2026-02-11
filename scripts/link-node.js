@@ -3,9 +3,6 @@ import path from 'node:path';
 
 const buildFolders = ["fenom-js", "vite-plugin-fenom"];
 
-// const source = path.resolve('fenom-js');
-// const target = path.resolve('node_modules/fenom-js');
-
 buildFolders.forEach(folder => {
     const source = path.resolve(`build/${folder}`);
     const target = path.resolve(`node_modules/${folder}`);
