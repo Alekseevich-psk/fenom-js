@@ -14,7 +14,7 @@ buildFolders.forEach(folder => {
         fs.rmSync(target, { recursive: true, force: true });
     }
 
-    fs.symlinkSync(source, target, 'dir');
+    fs.symlinkSync(source, target, 'junction');
     console.log(`✅ Символическая ссылка создана: node_modules/${folder} → src/${folder}`);
 
     // Проверим тип
