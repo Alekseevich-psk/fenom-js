@@ -1,5 +1,5 @@
 import type { Plugin, ResolvedConfig } from 'vite';
-import { join, relative, resolve, dirname, basename } from 'path';
+import { join, relative, resolve, extname, basename } from 'path';
 import * as fs from 'fs/promises';
 
 import { FenomJs } from 'fenom-js';
@@ -250,107 +250,115 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
             const pattern = join(searchPath, '**/*.tpl').replace(/\\/g, '/');
 
             try {
-                const files = await fastGlob(pattern);
-                if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Found templates:', files);
+                const templateFiles = await fastGlob(pattern);
+                if (debug) console.log('[Fenom Plugin] Found templates:', templateFiles);
 
-                // === Сбор информации о выходных файлах ===
-                const entryChunks: Record<string, string> = {}; // inputPath → /out/path.js
-                const cssAssets: Record<string, string> = {};   // inputPath → /out/path.css
+                // === Сбор всех выходных файлов ===
+                const emittedJs: Record<string, string> = {};     // relative moduleId → /out.js
+                const emittedCss: Record<string, string> = {};    // input basename → /out.css
 
                 for (const [fileName, file] of Object.entries(bundle)) {
-                    const outFile = `/${fileName}`;
+                    const publicPath = `/${fileName}`;
 
                     if (file.type === 'chunk' && file.facadeModuleId) {
-                        // Это JS-чанк, сопоставим с входом
-                        const inputPath = relative(config.root, file.facadeModuleId).replace(/\\/g, '/');
-                        entryChunks[inputPath] = outFile;
+                        const moduleId = relative(config.root, file.facadeModuleId).replace(/\\/g, '/');
+                        emittedJs[moduleId] = publicPath;
                     }
 
                     if (file.type === 'asset' && fileName.endsWith('.css')) {
-                        // Это CSS-ассет. Попробуем найти, из какого входа.
-                        // Vite не всегда хранит source, но имя может помочь
-                        if (file.name && file.name.endsWith('.css')) {
-                            // Пример: file.name = 'style.css' или 'style-hash.css'
-                            const baseName = basename(file.name, '.css');
-                            // Пока просто запоминаем — уточним позже
-                            cssAssets[file.name] = outFile;
-                        }
+                        // Сохраняем по базовому имени (без хеша)
+                        const baseName = fileName.replace(/\.[^.]+\.css$/, '.css'); // main.hash.css → main.css
+                        const keyName = baseName === fileName ? basename(fileName, '.css') : baseName.replace('.css', '');
+                        emittedCss[keyName] = publicPath;
                     }
                 }
 
-                // === Анализ входов ===
+                // === Получаем все входы как массив строк ===
                 const inputEntries = config.build.rollupOptions.input;
-                const inputs: string[] = [];
+                const inputPaths: string[] = [];
 
                 if (Array.isArray(inputEntries)) {
-                    inputs.push(...inputEntries.filter((i): i is string => typeof i === 'string'));
+                    inputPaths.push(...inputEntries);
                 } else if (typeof inputEntries === 'object' && inputEntries !== null) {
-                    inputs.push(...Object.values(inputEntries).filter((i): i is string => typeof i === 'string'));
+                    inputPaths.push(...Object.values(inputEntries));
                 } else if (typeof inputEntries === 'string') {
-                    inputs.push(inputEntries);
+                    inputPaths.push(inputEntries);
                 }
 
-                // === Карта замены: исходный путь → собранный файл ===
-                const replacementMap = new Map<string, string>();
+                // Нормализуем: приводим к абсолютному пути, затем к относительному от корня
+                const normalizedInputs = inputPaths.map((input) => {
+                    // Если путь абсолютный (начинается с /), считаем его относительно корня
+                    const absolute = input.startsWith('/')
+                        ? resolve(config.root, '.' + input)  // /src/main.ts → root/src/main.ts
+                        : resolve(config.root, input);       // src/main.ts → root/src/main.ts
+                    return relative(config.root, absolute).replace(/\\/g, '/');
+                });
 
-                for (const input of inputs) {
-                    if (!input.endsWith('.js') && !input.endsWith('.ts') && !input.endsWith('.css')) continue;
+                // === Карта замены: исходный путь (в шаблоне) → выходной ассет ===
+                const replacementMap = new Map<string, { type: 'js' | 'css'; path: string; }>();
 
-                    const normalizedInput = resolve(input).replace(/\\/g, '/');
-                    const relativeInput = relative(config.root, normalizedInput).replace(/\\/g, '/');
+                for (const input of normalizedInputs) {
+                    const ext = extname(input).toLowerCase();
+                    const baseInputName = basename(input, ext);
 
-                    if (input.endsWith('.ts') || input.endsWith('.js')) {
-                        const moduleId = relative(config.root, normalizedInput).replace(/\\/g, '/');
-                        if (entryChunks[moduleId]) {
-                            replacementMap.set(relativeInput, entryChunks[moduleId]);
+                    if (ext === '.ts' || ext === '.js') {
+                        if (emittedJs[input]) {
+                            // Прямое совпадение
+                            replacementMap.set(`/${input}`, { type: 'js', path: emittedJs[input] });
                         }
                     }
 
-                    if (input.endsWith('.css')) {
-                        const cssFileName = basename(input);
-                        // Ищем ассет, содержащий имя файла
-                        const matchedCss = Object.keys(cssAssets).find(name =>
-                            name === cssFileName || name.startsWith(basename(cssFileName, '.css'))
+                    if (ext === '.scss' || ext === '.css') {
+                        // Ищем CSS-файл по базовому имени
+                        const matchedCss = Object.keys(emittedCss).find(key =>
+                            key === baseInputName ||
+                            key === basename(input) ||
+                            key.includes(baseInputName)
                         );
                         if (matchedCss) {
-                            replacementMap.set(relativeInput, cssAssets[matchedCss]);
+                            replacementMap.set(`/${input}`, { type: 'css', path: emittedCss[matchedCss] });
                         }
                     }
                 }
 
                 // === Генерация HTML ===
-                for (const file of files) {
-                    const fileName = basename(file, '.tpl');
-                    const outputFileName = fileName === 'index' ? 'index.html' : `${fileName}.html`;
+                for (const file of templateFiles) {
+                    const pageName = basename(file, '.tpl');
+                    const outputFileName = pageName === 'index' ? 'index.html' : `${pageName}.html`;
 
                     const source = await fs.readFile(file, 'utf-8');
                     const context = {
-                        title: `${fileName.charAt(0).toUpperCase() + fileName.slice(1)} Page`,
+                        title: `${pageName.charAt(0).toUpperCase() + pageName.slice(1)} Page`,
                         debug: false,
-                        url: '/' + (fileName === 'index' ? '' : fileName),
+                        url: '/' + (pageName === 'index' ? '' : pageName),
                         ...globalData,
                     };
-                    
+
                     let html = await FenomJs(source, {
-                        context: context,
+                        context,
                         loader: templateLoader,
                         minify: minifyHtml,
                     });
 
-                    // === Замена путей ===
-                    for (const [devPath, prodPath] of replacementMap) {
-                        const fullDevPath = '/' + devPath;
-                        const escaped = fullDevPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    // === Замена тегов: поддержка путей с / и без / ===
+                    for (const [devPath, { type, path }] of replacementMap) {
+                        // devPath уже с `/` в начале: `/src/main.ts`
+                        const escaped = devPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-                        const scriptRegex = new RegExp(`<script[^>]+src=["']${escaped}["'][^>]*/?>`, 'gi');
-                        if (scriptRegex.test(html)) {
-                            html = html.replace(scriptRegex, `<script type="module" src="${prodPath}"></script>`);
+                        if (type === 'js') {
+                            const scriptRegex = new RegExp(`<script[^>]+src=["']${escaped}["'][^>]*/?>`, 'gi');
+                            html = html.replace(scriptRegex, `<script type="module" src="${path}"></script>`);
                         }
 
-                        const linkRegex = new RegExp(`<link[^>]+href=["']${escaped}["'][^>]*/?>`, 'gi');
-                        if (linkRegex.test(html)) {
-                            html = html.replace(linkRegex, `<link rel="stylesheet" href="${prodPath}">`);
+                        if (type === 'css') {
+                            const linkRegex = new RegExp(`<link[^>]+href=["']${escaped}["'][^>]*/?>`, 'gi');
+                            html = html.replace(linkRegex, `<link rel="stylesheet" href="${path}">`);
                         }
+                    }
+
+                    // Минификация
+                    if (minifyHtml) {
+                        html = html.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
                     }
 
                     this.emitFile({
@@ -362,8 +370,9 @@ export default function fenomPlugin(options: FenomPluginOptions = {}): Plugin {
                     if (debug) console.log('\x1b[36m[Fenom Plugin]\x1b[0m Generated:', outputFileName);
                 }
             } catch (err) {
-                console.error('\x1b[31m[Fenom Plugin]\x1b[0m Error during HTML generation:', err);
+                console.error('\x1b[31m[Fenom Plugin]\x1b[0m Build error:', err);
             }
-        },
+        }
+        ,
     };
 }
