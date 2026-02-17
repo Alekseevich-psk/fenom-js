@@ -2,32 +2,62 @@ import type { TokenPattern } from "./../types/token";
 
 // --- ГРУППА: Переменные и присвоение ---
 export const SET_PATTERNS: TokenPattern[] = [
+    // 1. {set $var = {...} или [...]}
     {
         type: 'set',
-        regex: /^\{set\s+\$([^\s}]+)\s*=\s*(['"])(.*?)\2\}/,
+        regex: /^\{set\s+\$(\w+)\s*=\s*(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\])\}/,
         process(match) {
-            return { variable: '$' + match[1], value: match[3] };
+            return {
+                variable: match[1], // без $
+                value: match[2].trim() // строка: "{a:1}" или "[1,2]"
+            };
         }
     },
+
+    // 2. {set $var = "строка" или 'строка'}
     {
         type: 'set',
-        regex: /^\{set\s+\$([^\s}]+)\s*=\s*([^}\s][^}]*)\}/,
+        regex: /^\{set\s+\$(\w+)\s*=\s*(['"])(.*?)\2\}/,
         process(match) {
-            return { variable: '$' + match[1], value: match[2].trim() };
+            return {
+                variable: match[1],
+                value: match[3] // содержимое внутри кавычек
+            };
         }
     },
+
+    // 3. {set $var = 123 / true / $other / $a + 1}
+    {
+        type: 'set',
+        regex: /^\{set\s+\$(\w+)\s*=\s*([^{][^}]*)\}/,
+        process(match) {
+            return {
+                variable: match[1],
+                value: match[2].trim() // любое выражение: 100, $x, $count + 1 и т.д.
+            };
+        }
+    },
+
+    // 4. {add $var ++}
     {
         type: 'add',
-        regex: /^\{add\s+\$([^\s}]+)\s*\+\+\}/,
+        regex: /^\{add\s+\$(\w+)\s*\+\+\}/,
         process(match) {
-            return { variable: '$' + match[1] };
+            return {
+                variable: match[1]
+            };
         }
     },
+
+    // 5. {var $var = "значение"} — аналог set, но может инициализировать
     {
         type: 'var',
-        regex: /^\{var\s+\$([^\s}]+)\s*=\s*(['"])(.*?)\2\}/,
+        regex: /^\{var\s+\$(\w+)\s*=\s*(['"])(.*?)\2\}/,
         process(match) {
-            return { variable: '$' + match[1], value: match[3] };
+            return {
+                variable: match[1],
+                value: match[3]
+            };
         }
     }
 ];
